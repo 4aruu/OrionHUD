@@ -20,7 +20,7 @@
 
   --text: #e8ecf3;
   --text-2: #9aa4b5;
-  --text-3: #6b7486;
+  --text-3: #8b94a7; /* ≥4.5:1 on the glass surfaces */
 
   --r-sm: 6px;
   --r-md: 10px;
@@ -29,12 +29,13 @@
   --t: 150ms ease-out;
 }
 
-html, body { height: 100%; }
+html { min-height: 100%; background: var(--bg); }
+body { min-height: 100%; }
 body {
   font-family: var(--font);
   font-size: 14px;
   line-height: 1.45;
-  background: var(--bg);
+  background: transparent; /* the base colour is on <html>, the glow on body::before */
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
@@ -317,3 +318,76 @@ h3.section-label { margin-bottom: -8px; }
 .disclosure .inspector { border: 0; padding: 0; }
 .inspector-head { order: 10; }
 .inbox { border-top: 1px solid var(--border); padding-top: 8px; }
+
+/* ═══ Frosted glass ═══════════════════════════════════════════════
+   A still, soft glow sits behind the panel; surfaces are translucent and
+   blurred with a visible edge. Solid fallbacks: no backdrop-filter support,
+   or the user asked for less transparency. Nothing animates. */
+:root {
+  --glass: rgba(24, 28, 44, 0.52);
+  --glass-strong: rgba(30, 35, 54, 0.72);
+  --glass-edge: rgba(255, 255, 255, 0.2);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --blur: blur(18px) saturate(150%);
+}
+/* The glow is a fixed layer behind everything, so it never seams while scrolling. */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(75% 45% at 5% -5%, rgba(99, 102, 241, 0.45), transparent 70%),
+    radial-gradient(60% 40% at 105% 40%, rgba(45, 212, 191, 0.2), transparent 70%),
+    radial-gradient(75% 45% at 20% 105%, rgba(139, 92, 246, 0.3), transparent 70%);
+}
+.resume, .tree, .card, .wf-card, .sheet, .toast, .inbox-list li, .hint-bar, .switch-prompt {
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  box-shadow: var(--glass-shine), 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+.sheet, .toast { background: var(--glass-strong); }
+.overlay { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.hint-bar { border-style: solid; }
+.wf-card:hover { border-color: rgba(255, 255, 255, 0.32); }
+.wf-card-active { border-color: rgba(52, 211, 153, 0.55); }
+.switch-prompt { background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.6); }
+.toast-error { border-color: rgba(248, 113, 113, 0.6); }
+
+/* The card for what you're doing glows faintly in the accent. */
+.resume {
+  background: linear-gradient(160deg, rgba(99, 102, 241, 0.2), rgba(24, 28, 44, 0.5) 60%);
+  border-color: rgba(129, 140, 248, 0.5);
+}
+.next-text { background: rgba(255, 255, 255, 0.06); }
+input[type="text"], input:not([type]), input[type="number"], textarea, select { background: rgba(10, 12, 20, 0.55); }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .resume, .tree, .card, .wf-card, .sheet, .toast, .inbox-list li, .hint-bar { background: var(--surface); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  body::before { display: none; }
+  .resume, .tree, .card, .wf-card, .sheet, .toast, .inbox-list li, .hint-bar, .switch-prompt {
+    background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+
+/* ═══ Task visibility ═════════════════════════════════════════════ */
+.tree { padding: 8px 4px; }
+.row { min-height: 36px; }
+.row-title { color: var(--text); }
+.row-parent > .row-title { font-weight: 500; }
+/* Nesting guides: a hairline under each ancestor's chevron. */
+.row::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 18px; width: var(--guides, 0px); pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 16px);
+}
+.row:hover { background: rgba(255, 255, 255, 0.05); }
+.row-focused { background: rgba(255, 255, 255, 0.07); }
+.row-active { background: rgba(99, 102, 241, 0.22); box-shadow: inset 3px 0 0 var(--accent); }
+.row-active > .row-title { color: #fff; font-weight: 600; }
+.tree:focus .row-focused { box-shadow: inset 3px 0 0 var(--accent-text); }
+.tree:focus .row-active.row-focused { box-shadow: inset 3px 0 0 var(--accent); }
+.row-done > .row-title { color: var(--text-3); }
+.row-done .check-done { opacity: 0.75; }
+.row-progress { color: var(--text-2); }
+.badge-now { color: #c7d2fe; background: rgba(99, 102, 241, 0.35); }

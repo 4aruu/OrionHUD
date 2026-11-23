@@ -322,8 +322,9 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                 aria-level={depth}
                 aria-selected={isFocused}
                 aria-expanded={hasKids ? !node.collapsed : undefined}
-                className={`row ${isFocused ? "row-focused" : ""} ${isActive ? "row-active" : ""} ${node.status === "DONE" ? "row-done" : ""}`}
-                style={{ paddingLeft: 10 + (depth - 1) * 16 }}
+                className={`row ${hasKids ? "row-parent" : ""} ${isFocused ? "row-focused" : ""} ${isActive ? "row-active" : ""} ${node.status === "DONE" ? "row-done" : ""}`}
+                // --guides: width of the nesting guide lines drawn left of this row.
+                style={{ paddingLeft: 10 + (depth - 1) * 16, ["--guides" as string]: `${(depth - 1) * 16}px` }}
                 onClick={() => setFocusedId(node.id)}
                 onDoubleClick={() => {
                   setEdit({ kind: "rename", id: node.id });
