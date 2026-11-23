@@ -126,8 +126,16 @@ Reliability decisions worth knowing:
 npm run typecheck
 npm test
 npm run build
+npm run test:e2e
 npm run harness
 ```
+
+`npm run test:e2e` builds, then drives the built extension in Playwright's Chromium (first time: `npx playwright install chromium`). Each test gets a fresh browser profile.
+
+- `e2e/panel.e2e.ts`: the side panel in a real extension page. Covers first run, creating a workflow from a pasted outline, complete and reopen, adding tasks, starting, switching and pausing with next steps, notes and decisions, the inbox, reload persistence, Copy brief, backup export/delete/import, rejecting a bad backup file, and the shortcut help. Fails on any console error.
+- `e2e/bridge.e2e.ts`: the agent bridge with nothing mocked. It runs the real `orionhud-bridge install` (first with a wrong extension ID, which must show "different extension ID"), lets Chromium start the native host, and connects an MCP client to `orionhud-bridge mcp` the way Claude Code does. The agent then reads the brief, completes a subtask, adds one and logs a decision. Chrome's real side panel (driven over CDP) updates live without a reload. Scope, open-children, bad-input and "Chrome closed" errors are checked end to end.
+
+  What the bridge test touches: bridge files go to a temporary folder, but on Windows Chrome only looks in the registry, so the test writes `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.orionhud.bridge`. Any existing value is saved first and restored afterwards. The extension copy used by this test has `nativeMessaging` granted up front, because automation can't click Chrome's permission prompt. That prompt is the one step still covered only by the manual checklist below.
 
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 

@@ -43,6 +43,8 @@ async function doConnect(): Promise<void> {
     await setStatus("off");
     return;
   }
+  // Written before connecting so it can never land after the outcome below.
+  await setStatus("connecting");
   let p: chrome.runtime.Port;
   try {
     p = chrome.runtime.connectNative(BRIDGE_HOST_NAME);
@@ -52,7 +54,9 @@ async function doConnect(): Promise<void> {
   }
   port = p;
   let hello = false;
-  await setStatus("connecting");
+  // Listeners go on synchronously, with no await in between: Chrome reports a
+  // missing host by disconnecting almost at once, and a missed disconnect
+  // would leave a dead port that blocks every later "Check again".
 
   p.onMessage.addListener((raw: unknown) => {
     const msg = parseHostMessage(raw);

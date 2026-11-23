@@ -50,3 +50,5 @@ Date: 2026-11-23 · Applies to: OrionHUD 0.3 agent bridge (`bridge/`, `src/backg
 - `test/bridgeService.test.ts`: scope rules, no cascade, limits, no internal error leakage.
 - `bridge/test/e2e.test.ts`: real socket, wrong-token rejection, oversized-frame drop, full tool → action → storage path.
 - `bridge/test/install.test.ts`: `allowed_origins`, launcher quoting, registry call arguments.
+- `test/bridgeConnect.test.ts`: a host that's missing or forbidden is reported even when Chrome disconnects at once, and "Check again" can retry.
+- `e2e/bridge.e2e.ts` (Playwright, real Chromium): the real install, with Chrome enforcing `allowed_origins` (a wrong extension ID is refused). Chrome launches the real host, and an MCP client drives all five tools. Scope, open-children and bad-input errors are checked end to end, and a closed browser gives a clear "unreachable" message.
