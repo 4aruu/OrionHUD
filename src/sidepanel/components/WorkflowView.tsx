@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IAppMeta, ILiveTabs, ITaskNode, IWorkflowState } from "../../shared/types";
 import { findTaskNode, leafProgress, walk } from "../../shared/taskTree";
 import { startWorkflow, stopWorkflow, switchTask } from "../../shared/workflowActions";
@@ -45,6 +45,25 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
   const [help, setHelp] = useState(false);
   const now = useNow(1000, Boolean(activeTask?.allocatedTimeMs));
   const focused = focusedId ? findTaskNode(workflow.rootNodes, focusedId) : undefined;
+
+  // Panel-level keys: "?" anywhere, and arrow keys bring focus back to the
+  // task list when it was lost (e.g. after clicking a toast button).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input, textarea, select, [contenteditable='true'], [role='dialog']")) return;
+      if (e.key === "?") {
+        e.preventDefault();
+        setHelp(true);
+      } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && (t === document.body || t === null)) {
+        e.preventDefault();
+        document.querySelector<HTMLElement>(".tree")?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const progress = leafProgress(workflow.rootNodes);
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   const cat = categoryOf(workflow.category);

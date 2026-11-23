@@ -89,6 +89,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
               autoFocus
               value={draft}
               maxLength={280}
+              aria-label="Next step"
               placeholder="What will you do first when you're back?"
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
@@ -121,8 +122,8 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
         )}
         {aiTabs.length > 0 && <span>{[...new Set(aiTabs.map((t) => t.vendor))].join(", ")} thread{aiTabs.length > 1 ? "s" : ""}</span>}
         {remaining !== null && (
-          <span className={remaining < 0 ? "timer timer-over" : "timer"} aria-label="Time left">
-            {formatCountdown(remaining)}
+          <span className={remaining < 0 ? "timer timer-over" : "timer"}>
+            {remaining < 0 ? `${formatCountdown(-remaining)} over` : `${formatCountdown(remaining)} left`}
           </span>
         )}
       </div>

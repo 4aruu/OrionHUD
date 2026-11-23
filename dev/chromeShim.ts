@@ -1,0 +1,79 @@
+// Dev-only stand-in for the chrome.* APIs the side panel touches, so the real
+// panel UI can run in a normal browser tab for visual and keyboard QA.
+// Never bundled into the extension (lives outside src/, own Vite config).
+
+type Listener = (...args: unknown[]) => unknown;
+
+const fakeTabs: chrome.tabs.Tab[] = [
+  { id: 1, url: "https://claude.ai/chat/7f3c", title: "Token refresh retry design", pinned: false },
+  { id: 2, url: "https://github.com/acme/payments/pull/412", title: "PR #412 · refresh tokens", pinned: false },
+  { id: 3, url: "https://developer.mozilla.org/en-US/docs/Web/API/fetch", title: "fetch() - MDN", pinned: false },
+  { id: 4, url: "chrome://extensions", title: "Extensions", pinned: false },
+] as chrome.tabs.Tab[];
+
+let tabsGranted = true;
+let badge = "";
+const messageListeners = new Set<Listener>();
+const log = (...a: unknown[]) => console.info("[chrome-shim]", ...a);
+
+const shim = {
+  runtime: {
+    id: "dev-harness",
+    onMessage: {
+      addListener: (l: Listener) => messageListeners.add(l),
+      removeListener: (l: Listener) => messageListeners.delete(l),
+    },
+    sendMessage: async (msg: unknown) => {
+      messageListeners.forEach((l) => l(msg, { id: "dev-harness" }, () => undefined));
+    },
+    getManifest: () => ({ version: "0.2.0-dev" }),
+    getURL: (p: string) => `/${p}`,
+  },
+  action: {
+    setBadgeText: async ({ text }: { text: string }) => {
+      badge = text;
+      log("badge", badge);
+    },
+    setTitle: async () => undefined,
+    setBadgeBackgroundColor: async () => undefined,
+  },
+  permissions: {
+    contains: async () => tabsGranted,
+    request: async () => {
+      tabsGranted = true;
+      return true;
+    },
+    remove: async () => {
+      tabsGranted = false;
+      return true;
+    },
+  },
+  tabs: {
+    query: async () => (tabsGranted ? fakeTabs : []),
+    create: async ({ url }: { url: string }) => {
+      log("open tab", url);
+      return { id: Math.floor(Math.random() * 1e6), url };
+    },
+    group: async () => 99,
+  },
+  tabGroups: {
+    query: async () => [],
+    update: async (_id: number, props: unknown) => log("group", props),
+  },
+  windows: { getLastFocused: async () => ({ id: 1 }) },
+  alarms: {
+    create: async (name: string, info: unknown) => log("alarm", name, info),
+    clear: async () => true,
+    get: async () => undefined,
+  },
+};
+
+(globalThis as unknown as { chrome: unknown }).chrome = shim;
+(globalThis as unknown as { __orionShim: unknown }).__orionShim = {
+  get badge() {
+    return badge;
+  },
+  setTabsGranted(v: boolean) {
+    tabsGranted = v;
+  },
+};

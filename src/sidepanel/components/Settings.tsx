@@ -92,7 +92,10 @@ export function Settings({ workflows, ui, onBack }: Props) {
 
       <section className="card">
         <h3>Backup</h3>
-        <p className="muted">Everything lives in this browser. Export a backup before reinstalling or switching machines.</p>
+        <p className="muted">
+          Everything lives in this browser. Export a backup before reinstalling or switching machines. The file contains your tasks, notes and saved tab
+          addresses in plain text, so store it like any other private document.
+        </p>
         <div className="row-buttons">
           <button className="btn btn-ghost btn-sm" onClick={() => void doExport()}>
             Export backup

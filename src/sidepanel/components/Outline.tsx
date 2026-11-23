@@ -44,9 +44,19 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
   const [edit, setEdit] = useState<EditState | null>(null);
   const [draft, setDraft] = useState("");
   const treeRef = useRef<HTMLDivElement>(null);
+  // Bumped whenever an edit is opened or cancelled, so an in-flight save
+  // can't reopen an input the user already dismissed.
+  const editGen = useRef(0);
+  const committing = useRef(false);
   const focused = focusedId ? findTaskNode(workflow.rootNodes, focusedId) : undefined;
 
+  // Follow keyboard focus, but not on first render: the panel should open at
+  // the top, where the resume card is.
+  // (Compared by value, so StrictMode's double effect run doesn't scroll.)
+  const lastScrolled = useRef(focusedId);
   useEffect(() => {
+    if (focusedId === lastScrolled.current) return;
+    lastScrolled.current = focusedId;
     if (focusedId) document.getElementById(`row-${focusedId}`)?.scrollIntoView({ block: "nearest" });
   }, [focusedId]);
 
@@ -56,12 +66,14 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
   }, [focusedId, focused, rows, setFocusedId]);
 
   function backToTree() {
+    editGen.current++;
     setEdit(null);
     setDraft("");
     requestAnimationFrame(() => treeRef.current?.focus());
   }
 
   function startNew(asChild: boolean) {
+    editGen.current++;
     if (!focused) {
       setEdit({ kind: "new", parentId: null, index: workflow.rootNodes.length, anchorId: null, depth: 1 });
     } else if (asChild) {
@@ -96,12 +108,19 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
       backToTree();
       return;
     }
-    const created = await ui.run(() => addTask(workflow.id, edit.parentId, text, { index: edit.index }));
-    if (created) {
+    if (committing.current) return;
+    committing.current = true;
+    const gen = ++editGen.current;
+    const created = await ui.run(() => addTask(workflow.id, edit.parentId, text, { index: edit.index })).finally(() => {
+      committing.current = false;
+    });
+    if (created && gen === editGen.current) {
       setFocusedId(created.id);
       // Keep typing: the next Enter adds the following sibling.
       setEdit({ ...edit, index: edit.index + 1, anchorId: created.id });
       setDraft("");
+    } else if (created) {
+      setFocusedId(created.id);
     }
   }
 

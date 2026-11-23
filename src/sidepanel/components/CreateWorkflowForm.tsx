@@ -71,7 +71,7 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
 
       <label className="field">
         <span>Name</span>
-        <input autoFocus value={name} maxLength={LIMITS.workflowName} placeholder="Payments API v2" onChange={(e) => setName(e.target.value)} />
+        <input autoFocus aria-label="Workflow name" value={name} maxLength={LIMITS.workflowName} placeholder="Payments API v2" onChange={(e) => setName(e.target.value)} />
       </label>
 
       <fieldset className="field">
@@ -100,6 +100,7 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
         </span>
         <textarea
           rows={7}
+          aria-label="Plan: one task per line, indent for subtasks"
           value={plan}
           placeholder={"Auth refactor\n  Token refresh\n    Write retry test\n  Logout everywhere\nDocs"}
           onChange={(e) => setPlan(e.target.value)}
@@ -127,7 +128,7 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
             <p className="muted small">Get a nudge after a grace period on these sites. Needs tab memory (Settings).</p>
             <label className="field-inline">
               Grace period
-              <input type="number" min={0} max={60} value={grace} onChange={(e) => setGrace(Number(e.target.value))} /> min
+              <input type="number" aria-label="Grace period in minutes" min={0} max={60} value={grace} onChange={(e) => setGrace(Number(e.target.value))} /> min
             </label>
             <div className="tags">
               {domains.map((d) => (
@@ -141,6 +142,7 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
             </div>
             <div className="inline-form">
               <input
+                aria-label="Add a site to the distraction guard"
                 value={domainInput}
                 placeholder="Add a site, e.g. news.ycombinator.com"
                 onChange={(e) => setDomainInput(e.target.value)}
