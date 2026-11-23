@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { ITaskNode, IWorkflowState } from "../../shared/types";
-import { findTaskNode, flattenVisible, leafProgress } from "../../shared/taskTree";
+import { findPath, findTaskNode, flattenVisible, leafProgress, type VisibleRow } from "../../shared/taskTree";
 import { parseOutline } from "../../shared/outline";
 import {
-  OrionError,
   addOutline,
   addTask,
-  completeTask,
   deleteTask,
   indentTask,
   moveTask,
@@ -18,7 +16,7 @@ import {
   toggleMilestone,
 } from "../../shared/workflowActions";
 import { copyBrief, type Ui } from "../lib/ui";
-import { errorMessage } from "../lib/format";
+import { completeWithFeedback } from "../lib/complete";
 
 type EditState =
   | { kind: "rename"; id: string }
@@ -39,8 +37,32 @@ function siblingIndex(workflow: IWorkflowState, node: ITaskNode): number {
   return siblings.findIndex((s) => s.id === node.id);
 }
 
+/** Rows of one group, minus finished tasks (and anything under them) unless they're shown. */
+function visibleRows(all: VisibleRow[], showDone: boolean): VisibleRow[] {
+  const out: VisibleRow[] = [];
+  let skipBelow = Infinity;
+  all.forEach((r, i) => {
+    if (r.depth > skipBelow) return;
+    skipBelow = Infinity;
+    if (i > 0 && !showDone && r.node.status === "DONE") {
+      skipBelow = r.depth;
+      return;
+    }
+    out.push(r);
+  });
+  return out;
+}
+
 export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwitch, onHelp }: Props) {
-  const rows = flattenVisible(workflow.rootNodes);
+  // One group per top-level task. Finished subtasks fold into a "✓ N done"
+  // line, so the list shows what's left.
+  const [shownDone, setShownDone] = useState<ReadonlySet<string>>(() => new Set());
+  const groups = workflow.rootNodes.map((root) => {
+    const all = flattenVisible([root]);
+    const showing = shownDone.has(root.id);
+    return { root, showing, rows: visibleRows(all, showing), doneCount: all.slice(1).filter((r) => r.node.status === "DONE").length };
+  });
+  const rows = groups.flatMap((g) => g.rows);
   const [edit, setEdit] = useState<EditState | null>(null);
   const [draft, setDraft] = useState("");
   const treeRef = useRef<HTMLDivElement>(null);
@@ -60,10 +82,26 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
     if (focusedId) document.getElementById(`row-${focusedId}`)?.scrollIntoView({ block: "nearest" });
   }, [focusedId]);
 
-  // If the focused task disappears (deleted elsewhere), fall back to the first row.
+  // If the focused task disappears (deleted elsewhere) fall back to the first
+  // row. If it folds away: once finished, to the row now in its place; under
+  // a collapsed parent, to that parent.
+  const focusIndex = rows.findIndex((r) => r.node.id === focusedId);
+  const lastFocusIndex = useRef(0);
   useEffect(() => {
-    if (focusedId && !focused) setFocusedId(rows[0]?.node.id ?? null);
-  }, [focusedId, focused, rows, setFocusedId]);
+    if (focusIndex >= 0) {
+      lastFocusIndex.current = focusIndex;
+      return;
+    }
+    if (!focusedId) return;
+    if (!focused) {
+      setFocusedId(rows[0]?.node.id ?? null);
+      return;
+    }
+    const shown = new Set(rows.map((r) => r.node.id));
+    const ancestor = focused.status === "DONE" ? undefined : findPath(workflow.rootNodes, focused.id).reverse().find((n) => shown.has(n.id));
+    const fallback = rows[Math.min(lastFocusIndex.current, rows.length - 1)];
+    setFocusedId(ancestor?.id ?? fallback?.node.id ?? null);
+  }, [focusIndex, focusedId, focused, rows, setFocusedId, workflow.rootNodes]);
 
   function backToTree() {
     editGen.current++;
@@ -134,32 +172,8 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
   }
 
   async function toggleDone(node: ITaskNode) {
-    if (node.status === "DONE") {
-      await ui.run(() => reopenTask(workflow.id, node.id));
-      return;
-    }
-    const finish = async (cascade: boolean) => {
-      try {
-        const r = await completeTask(workflow.id, node.id, { cascade });
-        await ui.reload();
-        const parent = r.parentReadyId ? findTaskNode(workflow.rootNodes, r.parentReadyId) : undefined;
-        const next = r.nextTaskId ? findTaskNode(workflow.rootNodes, r.nextTaskId) : undefined;
-        if (parent) {
-          ui.toast({ kind: "info", text: `All of “${parent.title}” is done.`, action: { label: "Complete it", run: () => void toggleDone(parent) } });
-        } else if (node.id === activeId && next) {
-          ui.toast({ kind: "info", text: `Next up: ${next.title}`, action: { label: "Start", run: () => onSwitch(next.id) } });
-        } else {
-          ui.toast({ kind: "info", text: "Done." });
-        }
-      } catch (err) {
-        if (err instanceof OrionError && err.code === "open-children") {
-          ui.toast({ kind: "info", text: err.message, action: { label: "Complete all", run: () => void finish(true) } });
-        } else {
-          ui.toast({ kind: "error", text: errorMessage(err) });
-        }
-      }
-    };
-    await finish(false);
+    if (node.status === "DONE") await ui.run(() => reopenTask(workflow.id, node.id));
+    else await completeWithFeedback({ workflow, node, activeId, ui, onStart: onSwitch });
   }
 
   async function remove(node: ITaskNode) {
@@ -304,8 +318,49 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
           <p className="muted small">Tip: paste a bulleted plan from any AI chat to add it all at once.</p>
         </div>
       )}
-      {newAtTop && edit && editInput(edit.depth)}
-      {rows.map(({ node, depth }) => {
+      {newAtTop && edit && <div className="group group-solo" role="none">{editInput(edit.depth)}</div>}
+      {groups.map((g) => (
+        <Fragment key={g.root.id}>
+          <div className={`group ${g.root.subTasks.length ? "" : "group-solo"}`} role="none">
+            {g.rows.map((r) => renderRow(r))}
+            {g.doneCount > 0 && (
+              <button
+                className="done-fold"
+                aria-expanded={g.showing}
+                aria-label={`${g.showing ? "Hide" : "Show"} ${g.doneCount} done in ${g.root.title}`}
+                onClick={() =>
+                  setShownDone((prev) => {
+                    const next = new Set(prev);
+                    if (!next.delete(g.root.id)) next.add(g.root.id);
+                    return next;
+                  })
+                }
+              >
+                <span>✓ {g.doneCount} done</span>
+                <span className="done-fold-act">{g.showing ? "Hide" : "Show"}</span>
+              </button>
+            )}
+          </div>
+          {edit?.kind === "new" && edit.parentId === null && edit.anchorId !== null && g.rows.some((r) => r.node.id === edit.anchorId) && (
+            <div className="group group-solo" role="none">
+              {editInput(1)}
+            </div>
+          )}
+        </Fragment>
+      ))}
+      {rows.length > 0 && !edit && (
+        <button className="add-row" onClick={() => {
+          setFocusedId(null);
+          setEdit({ kind: "new", parentId: null, index: workflow.rootNodes.length, anchorId: rows[rows.length - 1]!.node.id, depth: 1 });
+          setDraft("");
+        }}>
+          + Add task
+        </button>
+      )}
+    </div>
+  );
+
+  function renderRow({ node, depth }: VisibleRow) {
         const isFocused = node.id === focusedId;
         const isActive = node.id === activeId;
         const hasKids = node.subTasks.length > 0;
@@ -322,9 +377,8 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                 aria-level={depth}
                 aria-selected={isFocused}
                 aria-expanded={hasKids ? !node.collapsed : undefined}
-                className={`row ${hasKids ? "row-parent" : ""} ${isFocused ? "row-focused" : ""} ${isActive ? "row-active" : ""} ${node.status === "DONE" ? "row-done" : ""}`}
-                // --guides: width of the nesting guide lines drawn left of this row.
-                style={{ paddingLeft: 10 + (depth - 1) * 16, ["--guides" as string]: `${(depth - 1) * 16}px` }}
+                className={`row ${hasKids ? "row-parent" : ""} ${depth === 1 && hasKids ? "row-head" : ""} ${isFocused ? "row-focused" : ""} ${isActive ? "row-active" : ""} ${node.status === "DONE" ? "row-done" : ""}`}
+                style={{ paddingLeft: 8 + (depth - 1) * 16 }}
                 onClick={() => setFocusedId(node.id)}
                 onDoubleClick={() => {
                   setEdit({ kind: "rename", id: node.id });
@@ -403,19 +457,8 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                 </span>
               </div>
             )}
-            {edit?.kind === "new" && edit.anchorId === node.id && editInput(edit.depth)}
+            {edit?.kind === "new" && edit.parentId !== null && edit.anchorId === node.id && editInput(edit.depth)}
           </div>
         );
-      })}
-      {rows.length > 0 && !edit && (
-        <button className="add-row" onClick={() => {
-          setFocusedId(null);
-          setEdit({ kind: "new", parentId: null, index: workflow.rootNodes.length, anchorId: rows[rows.length - 1]!.node.id, depth: 1 });
-          setDraft("");
-        }}>
-          + Add task
-        </button>
-      )}
-    </div>
-  );
+  }
 }

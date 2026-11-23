@@ -15,7 +15,6 @@ interface Props {
 
 export function InboxPanel({ workflow, focusedId, activeId, now, ui }: Props) {
   const [text, setText] = useState("");
-  const [open, setOpen] = useState(false);
   const target = focusedId ? findTaskNode(workflow.rootNodes, focusedId) : undefined;
   const inputId = useId();
 
@@ -26,15 +25,10 @@ export function InboxPanel({ workflow, focusedId, activeId, now, ui }: Props) {
   }
 
   return (
-    <section className="inbox">
-      <button className="section-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <span className={`caret ${open ? "caret-open" : ""}`}>▸</span>
-        Inbox
-        {workflow.inbox.length > 0 && <span className="count">{workflow.inbox.length}</span>}
-        <span className="muted small hint-right">Alt+Shift+Q from any page</span>
-      </button>
-      {open && (
-        <>
+    <section className="inbox" aria-label="Inbox">
+          <p className="drawer-for">
+            Side quests, parked so they don't pull you off task. Add from any page with <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>.
+          </p>
           <form
             className="note-form"
             onSubmit={(e) => {
@@ -91,8 +85,6 @@ export function InboxPanel({ workflow, focusedId, activeId, now, ui }: Props) {
               ))}
             </ul>
           )}
-        </>
-      )}
     </section>
   );
 }

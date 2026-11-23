@@ -84,9 +84,9 @@ export function resumeCard(page: Page) {
   return page.getByRole("region", { name: /^(Current task|Welcome back)$/ });
 }
 
-/** Notes and decisions live in a closed section under the plan; open it. */
+/** Notes and decisions sit behind the "Notes" tab under the plan; open it. */
 export async function openNotes(page: Page): Promise<void> {
-  const toggle = page.getByRole("button", { name: /^Notes for/ });
+  const toggle = page.getByRole("button", { name: /^Notes \d+$/ });
   if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
 }
 

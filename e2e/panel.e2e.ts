@@ -27,14 +27,40 @@ test("first run: welcome screen, then a workflow built from a pasted outline", a
   await expect(panel.getByLabel("0 of 3 tasks done")).toBeVisible();
 });
 
-test("complete and reopen a task updates progress", async ({ panel }) => {
+test("complete and reopen a task updates progress; finished tasks fold away", async ({ panel }) => {
   await createWorkflow(panel, "Payments API v2", PLAN);
   await panel.getByRole("button", { name: "Complete Write retry test" }).click();
   await expect(panel.getByLabel("1 of 3 tasks done")).toBeVisible();
-  await expect(panel.getByRole("button", { name: "Reopen Write retry test" })).toBeVisible();
+  // Finished subtasks leave the list and fold into one line per group.
+  await expect(panel.getByRole("treeitem").filter({ hasText: "Write retry test" })).toHaveCount(0);
+  const fold = panel.getByRole("button", { name: "Show 1 done in Auth refactor" });
+  await fold.click();
+  await expect(panel.getByRole("button", { name: "Hide 1 done in Auth refactor" })).toHaveAttribute("aria-expanded", "true");
 
   await panel.getByRole("button", { name: "Reopen Write retry test" }).click();
   await expect(panel.getByLabel("0 of 3 tasks done")).toBeVisible();
+  await expect(panel.getByRole("button", { name: /done in Auth refactor$/ })).toHaveCount(0);
+});
+
+test("a plain completion can be undone from the toast", async ({ panel }) => {
+  await createWorkflow(panel, "Payments API v2", PLAN);
+  await panel.getByRole("button", { name: "Complete Docs" }).click();
+  await expect(toast(panel)).toContainText("Done: Docs");
+  await toast(panel).getByRole("button", { name: "Undo" }).click();
+  await expect(panel.getByLabel("0 of 3 tasks done")).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Complete Docs" })).toBeVisible();
+});
+
+test("Mark done on the Now strip, then finish the parent from the toast", async ({ panel }) => {
+  await createWorkflow(panel, "Payments API v2", PLAN);
+  await workOn(panel, "Write retry test");
+  await resumeCard(panel).getByRole("button", { name: "Mark done" }).click();
+  await expect(panel.getByLabel("1 of 3 tasks done")).toBeVisible();
+  // Its parent has nothing left open, so the toast offers to close it too.
+  await expect(toast(panel)).toContainText("All of “Token refresh” is done.");
+  await toast(panel).getByRole("button", { name: "Complete it" }).click();
+  await expect(panel.getByRole("button", { name: "Show 2 done in Auth refactor" })).toBeVisible();
+  await expect(panel.getByRole("treeitem").filter({ hasText: "Token refresh" })).toHaveCount(0);
 });
 
 test("add a task inline from the outline", async ({ panel }) => {

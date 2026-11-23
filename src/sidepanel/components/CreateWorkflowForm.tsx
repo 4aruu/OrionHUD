@@ -165,7 +165,7 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
                 setDomains(CATEGORY_DISTRACTIONS[c.id]);
               }}
             >
-              {c.icon} {c.label}
+              {c.label}
             </button>
           ))}
         </div>

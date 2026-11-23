@@ -349,9 +349,10 @@ test("an agent reads the brief and checks off a subtask; the side panel updates 
     // 6. The agent finishes a subtask: both the tab and the real side panel update without a reload.
     const done = await mcp.call("complete_task", { task_id: testId });
     expect(done.isError ?? false).toBe(false);
-    await expect(panel.getByRole("button", { name: "Reopen Write the e2e test" })).toBeVisible();
+    // Finished subtasks fold into the group's "done" line.
+    await expect(panel.getByRole("button", { name: "Show 1 done in Ship the agent bridge" })).toBeVisible();
     await expect(panel.getByLabel("1 of 3 tasks done")).toBeVisible();
-    await expect.poll(() => side.eval<boolean>(`!!document.querySelector('[aria-label="Reopen Write the e2e test"]')`)).toBe(true);
+    await expect.poll(() => side.eval<boolean>(`!!document.querySelector('[aria-label="Show 1 done in Ship the agent bridge"]')`)).toBe(true);
 
     // 7. Adds a follow-up and logs why.
     const added = await mcp.call("add_subtask", { title: "Record a demo GIF" });
