@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import type { CDPSession, Page } from "@playwright/test";
-import { DIST, ROOT, createWorkflow, expect, resumeCard, launchExtension, openPanel, test, type LaunchedExtension } from "./fixtures";
+import { DIST, ROOT, createWorkflow, expect, openNotes, resumeCard, launchExtension, openPanel, test, type LaunchedExtension } from "./fixtures";
 
 const BUNDLE = join(ROOT, "bridge", "dist", "orion-bridge.mjs");
 const HOST = "com.orionhud.bridge";
@@ -359,7 +359,8 @@ test("an agent reads the brief and checks off a subtask; the side panel updates 
     await expect(panel.getByRole("treeitem").filter({ hasText: "Record a demo GIF" })).toBeVisible();
     const decision = await mcp.call("log_decision", { text: "Test the bridge through real native messaging, not mocks" });
     expect(decision.isError ?? false).toBe(false);
-    await expect(resumeCard(panel)).toContainText("1 decision");
+    await openNotes(panel);
+    await expect(panel.getByRole("region", { name: "Details for Ship the agent bridge" })).toContainText("Test the bridge through real native messaging");
 
     // 8. Guard rails hold end to end.
     const outOfScope = await mcp.call("complete_task", { task_id: await taskIdByTitle(panel, "Announce it") });

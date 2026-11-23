@@ -360,7 +360,7 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                   {node.isMilestone && <span className="flag" aria-label="milestone">⚑ </span>}
                   {node.title}
                 </span>
-                {isActive && <span className="badge-now">now</span>}
+                {isActive && <span className="badge-now">Now</span>}
                 {p && (
                   <span className="row-progress" aria-label={`${p.done} of ${p.total} done`}>
                     {p.done}/{p.total}

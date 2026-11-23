@@ -3,7 +3,7 @@
 
 import { readFile } from "node:fs/promises";
 import type { Page } from "@playwright/test";
-import { createWorkflow, expect, resumeCard, test } from "./fixtures";
+import { createWorkflow, expect, openNotes, resumeCard, test } from "./fixtures";
 
 const PLAN = ["Auth refactor", "  Token refresh", "    Write retry test", "  Logout everywhere", "Docs"].join("\n");
 const toast = (page: Page) => page.locator(".toast");
@@ -82,6 +82,7 @@ test("notes, decisions and the inbox", async ({ panel }) => {
   await createWorkflow(panel, "Payments API v2", PLAN);
 
   // The first root task is focused by default.
+  await openNotes(panel);
   const inspector = panel.getByRole("region", { name: "Details for Auth refactor" });
   await inspector.getByRole("textbox", { name: "Note" }).fill("npm run test:auth");
   await inspector.getByRole("textbox", { name: "Note" }).press("Enter");
@@ -209,6 +210,7 @@ test("the service worker starts clean", async ({ ext }) => {
 
 test("deleting a note, a decision or an inbox item can be undone", async ({ panel }) => {
   await createWorkflow(panel, "Payments API v2", PLAN);
+  await openNotes(panel);
   const inspector = panel.getByRole("region", { name: "Details for Auth refactor" });
   await expect(inspector.getByText("Add a note")).toBeVisible(); // a visible label, not just a placeholder
   await inspector.getByRole("textbox", { name: "Note" }).fill("npm run test:auth");

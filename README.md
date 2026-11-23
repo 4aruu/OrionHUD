@@ -11,7 +11,7 @@ Why it exists, and how it differs from tab managers, AI-memory plugins and agent
 | **Save points** | Recorded when you switch tasks, pause, go idle for 5 min, lock the screen, or the browser restarts after a crash. Each one holds your *next step*, the task's tabs, and when/why it was saved. Manual: `Alt+Shift+S` from any page. |
 | **Resume card** | When you come back: "Welcome back · saved 42 min ago when you stepped away", the breadcrumb (`Auth refactor › Token refresh › Write retry test`), your next step, which AI threads you had open, **Reopen tabs** (as a named tab group) and **Copy brief**. The toolbar icon shows ↩ while a resume card is waiting. |
 | **Outliner** | Subtasks on subtasks (8 levels), fully keyboard driven. Progress rolls up from leaves. Finishing a task suggests what's next; finishing the last child offers to close the parent. Paste a bulleted plan from any AI chat and it becomes a task tree. |
-| **Milestones** | Flag any task (`m`). A strip at the top shows progress per milestone so the big picture survives while you're deep in a leaf. |
+| **Milestones** | Flag any task (`m`). Flagged tasks show their progress right in the plan, so the big picture survives while you're deep in a leaf. |
 | **Decisions** | Select text in any AI reply or page → right-click → **Pin to OrionHUD as a decision**. Itemized and append-only on purpose. |
 | **Inbox** | `Alt+Shift+Q` on any page parks a side quest without leaving your task. Triage later into a task or subtask. |
 | **Handoff brief** | `c` (or Copy brief) puts a compact Markdown context block on your clipboard: path, milestone, progress, next step, decisions, open subtasks, links. Paste it into Claude, ChatGPT, Cursor, anything. |
@@ -77,7 +77,7 @@ Notes:
 | `idle` | Auto save point when you step away | none |
 | `activeTab`, `scripting` | Show the capture box on the tab where you pressed the shortcut, nowhere else | none |
 | `contextMenus` | "Pin as decision" / "Send to inbox" on selected text | none |
-| `notifications` | Time's up, confirmations | none |
+| `notifications` | Timebox ended, confirmations | none |
 | `tabGroups` | Reopen a task's tabs as one named group | none |
 | `tabs` (**optional**, asked when you turn on tab memory) | Read tab URLs/titles for save points and the distraction guard | "Read your browsing history" |
 | `nativeMessaging` (**optional**, asked when you turn on the agent bridge) | Talk to the local bridge helper you installed | "Communicate with cooperating native applications" |

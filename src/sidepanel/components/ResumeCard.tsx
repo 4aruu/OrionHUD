@@ -18,6 +18,8 @@ interface Props {
   ui: Ui;
   onResume: (taskId: string) => void;
   onFocus: (taskId: string) => void;
+  /** Shown on the card while the task is active. */
+  onPause?: () => void;
 }
 
 const TRIGGER_TEXT: Record<string, string> = {
@@ -33,7 +35,7 @@ function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
-export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onResume, onFocus }: Props) {
+export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onResume, onFocus, onPause }: Props) {
   const latest = task.savePoints[0] ?? null;
   const welcome = shouldShowResume({ latest, lastResumeShownAt: meta.lastResumeShownAt, now });
   const nextStep = latestNextStep(task.savePoints);
@@ -68,24 +70,32 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
     setDraft("");
   }
 
+  const parents = path.slice(0, -1);
+  const aiVendors = [...new Set(aiTabs.map((t) => t.vendor).filter(Boolean))];
+
   return (
-    <section className={`resume ${welcome ? "resume-welcome" : ""}`} aria-label={welcome ? "Welcome back" : "Current task"}>
-      {welcome && latest && (
-        <div className="resume-eyebrow">
-          Welcome back · saved {formatAgo(now - latest.createdAt)} {TRIGGER_TEXT[latest.trigger] ?? ""}
-        </div>
-      )}
-      <button className="crumbs" onClick={() => onFocus(task.id)} title="Show in outline">
-        {path.map((n, i) => (
-          <span key={n.id} className={i === path.length - 1 ? "crumb crumb-current" : "crumb"}>
-            {n.isMilestone && <span className="flag" aria-label="milestone">⚑</span>}
-            {n.title}
+    <section className="resume" aria-label={welcome ? "Welcome back" : "Current task"}>
+      <div className="resume-top">
+        <span className="section-label">{isActive ? "Working on now" : "Where you left off"}</span>
+        {welcome && latest && (
+          <span className="muted small">
+            Saved {formatAgo(now - latest.createdAt)} {TRIGGER_TEXT[latest.trigger] ?? ""}
+            {" · "}
+            <button className="link-btn" onClick={() => void dismiss()}>
+              Dismiss
+            </button>
           </span>
-        ))}
+        )}
+      </div>
+
+      <button className="resume-title" onClick={() => onFocus(task.id)} aria-label={`${task.title}: show in plan`}>
+        {task.isMilestone && <span className="flag" aria-label="milestone">⚑ </span>}
+        {task.title}
       </button>
+      {parents.length > 0 && <p className="resume-path">in {parents.map((n) => n.title).join(" › ")}</p>}
 
       <div className="next-step">
-        <span className="next-label">Next step</span>
+        <span className="field-label">Next step</span>
         {editing ? (
           <form
             className="inline-form"
@@ -99,7 +109,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
               value={draft}
               maxLength={280}
               aria-label="Next step"
-              placeholder="What will you do first when you're back?"
+              placeholder="e.g. Run the failing test again"
               aria-invalid={hint ? true : undefined}
               aria-describedby={hint ? "next-step-hint" : undefined}
               onChange={(e) => {
@@ -134,64 +144,50 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
         )}
       </div>
 
-      <div className="resume-meta">
-        {task.subTasks.length > 0 && (
-          <span>
-            {progress.done}/{progress.total} subtasks
-          </span>
-        )}
-        {task.microNotes.some((n) => n.kind === "decision") && (
-          <span>{plural(task.microNotes.filter((n) => n.kind === "decision").length, "decision")}</span>
-        )}
-        {aiTabs.length > 0 && <span>{[...new Set(aiTabs.map((t) => t.vendor))].join(", ")} thread{aiTabs.length > 1 ? "s" : ""}</span>}
-        {remaining !== null && (
-          <span className={remaining < 0 ? "timer timer-over" : "timer"}>
-            {remaining < 0 ? `${formatCountdown(-remaining)} over` : `${formatCountdown(remaining)} left`}
-          </span>
-        )}
-      </div>
-
-      {welcome && tabs.length > 0 && (
-        <ul className="tab-list">
-          {tabs.slice(0, 5).map((t) => (
-            <li key={t.url} title={t.url}>
-              {t.vendor ? <span className="chip chip-ai">{t.vendor}</span> : <span className="chip">page</span>}
-              <span className="tab-title">{t.title}</span>
-            </li>
-          ))}
-          {tabs.length > 5 && <li className="muted">+{tabs.length - 5} more</li>}
-        </ul>
+      {(task.subTasks.length > 0 || remaining !== null || (welcome && tabs.length > 0)) && (
+        <p className="resume-meta">
+          {task.subTasks.length > 0 && <span>{progress.done} of {progress.total} subtasks done</span>}
+          {remaining !== null && (
+            <span>{remaining < 0 ? `Timebox ended ${formatAgo(-remaining)}` : `${formatCountdown(remaining)} left in timebox`}</span>
+          )}
+          {welcome && tabs.length > 0 && (
+            <span>
+              {plural(tabs.length, "tab")} saved{aiVendors.length ? `, including ${aiVendors.join(" and ")}` : ""}
+            </span>
+          )}
+        </p>
       )}
 
       <div className="resume-actions">
-        {!isActive && (
+        {isActive ? (
+          onPause && (
+            <button className="btn btn-ghost btn-sm" onClick={onPause}>
+              Pause
+            </button>
+          )
+        ) : (
           <button className="btn btn-primary btn-sm" onClick={() => onResume(task.id)}>
             Resume task
           </button>
         )}
         {tabs.length > 0 && (
           <button
-            className={`btn btn-sm ${isActive ? "btn-ghost" : "btn-ghost"}`}
+            className="link-btn"
             onClick={() =>
               void ui.run(async () => {
                 const n = await restoreTabs(tabs, task.title);
                 await markResumeShown();
                 await clearResumeBadge();
                 return n;
-              }, `Reopened ${tabs.length} tab${tabs.length === 1 ? "" : "s"} as a group.`)
+              }, `Reopened ${plural(tabs.length, "tab")} as a group.`)
             }
           >
-            Reopen {tabs.length} tab{tabs.length === 1 ? "" : "s"}
+            Reopen {plural(tabs.length, "tab")}
           </button>
         )}
-        <button className="btn btn-ghost btn-sm" onClick={() => void copyBrief(workflow, task.id, ui)}>
+        <button className="link-btn" onClick={() => void copyBrief(workflow, task.id, ui)}>
           Copy brief
         </button>
-        {welcome && (
-          <button className="btn btn-ghost btn-sm" onClick={() => void dismiss()}>
-            Dismiss
-          </button>
-        )}
       </div>
     </section>
   );

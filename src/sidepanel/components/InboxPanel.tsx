@@ -15,7 +15,7 @@ interface Props {
 
 export function InboxPanel({ workflow, focusedId, activeId, now, ui }: Props) {
   const [text, setText] = useState("");
-  const [open, setOpen] = useState(workflow.inbox.length > 0);
+  const [open, setOpen] = useState(false);
   const target = focusedId ? findTaskNode(workflow.rootNodes, focusedId) : undefined;
   const inputId = useId();
 

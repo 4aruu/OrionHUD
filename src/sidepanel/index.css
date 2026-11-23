@@ -96,35 +96,30 @@ kbd {
 .bar { flex: 1; display: block; height: 4px; background: rgba(255, 255, 255, 0.07); border-radius: 99px; overflow: hidden; }
 .bar > span { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 99px; transform-origin: left center; transition: transform 300ms ease-out; }
 
-/* ── Resume card ────────────────────────────────────── */
+/* ── Resume card ("Working on now" / "Where you left off") ── */
 .resume {
   border: 1px solid var(--border-strong); border-radius: var(--r-md); background: var(--surface);
-  padding: 12px; display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
 }
-.resume-welcome { border-color: rgba(99, 102, 241, 0.55); background: linear-gradient(180deg, rgba(99, 102, 241, 0.12), var(--surface) 70%); }
-.resume-eyebrow { font-size: 12px; font-weight: 600; color: var(--accent-text); }
-.crumbs { display: flex; flex-wrap: wrap; gap: 2px 0; border: 0; background: none; text-align: left; cursor: pointer; padding: 0; }
-.crumb { color: var(--text-2); font-size: 12px; }
-.crumb + .crumb::before { content: "›"; margin: 0 8px; color: var(--text-3); }
-.crumb-current { color: var(--text); font-weight: 600; font-size: 14px; }
+.resume-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.resume-title {
+  border: 0; background: none; padding: 0; text-align: left; cursor: pointer; color: var(--text);
+  font-size: 16px; font-weight: 600; line-height: 1.3; min-height: 28px; margin-bottom: -8px;
+}
+.resume-title:hover { color: var(--accent-text); }
+.resume-path { font-size: 12px; color: var(--text-3); }
 .flag { color: var(--amber); }
 .next-step { display: flex; flex-direction: column; gap: 4px; }
-.next-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); font-weight: 600; }
 .next-text {
-  text-align: left; border: 1px dashed transparent; background: var(--surface-2); border-radius: var(--r-sm);
+  text-align: left; border: 1px solid transparent; background: var(--surface-2); border-radius: var(--r-sm);
   padding: 8px 12px; font-size: 14px; cursor: text; color: var(--text);
 }
 .next-text:hover { border-color: var(--border-strong); }
-.next-empty { color: var(--text-3); font-style: italic; }
-.resume-meta { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; color: var(--text-2); }
-.timer { font-family: var(--mono); color: var(--accent-text); }
-.timer-over { color: var(--red); }
-.resume-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.tab-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.tab-list li { display: flex; gap: 8px; align-items: center; font-size: 12px; min-width: 0; }
-.tab-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
-.chip { flex-shrink: 0; font-size: 12px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--border-strong); color: var(--text-3); }
-.chip-ai { color: var(--accent-text); border-color: rgba(99, 102, 241, 0.45); background: var(--accent-soft); }
+.next-empty { color: var(--text-3); }
+.resume-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--text-2); }
+.resume-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.resume-actions .link-btn { min-height: 28px; font-size: 14px; }
+.resume-top .link-btn { font-size: 12px; min-height: 24px; }
 
 /* ── Switch prompt ──────────────────────────────────── */
 .switch-prompt { border: 1px solid var(--amber); border-radius: var(--r-md); padding: 12px; display: flex; flex-direction: column; gap: 8px; background: rgba(251, 191, 36, 0.06); }
@@ -149,16 +144,6 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .error { color: var(--red); font-size: 12px; }
 
 /* ── Milestones ─────────────────────────────────────── */
-.milestones { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-.milestone {
-  flex: 0 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; min-width: 130px; max-width: 180px;
-  padding: 8px 8px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); text-align: left; cursor: pointer;
-}
-.milestone:hover { border-color: var(--border-strong); }
-.milestone-title { grid-column: 1 / -1; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.milestone .bar { align-self: center; }
-.milestone-count { font-size: 12px; color: var(--text-2); font-family: var(--mono); }
-.milestone-done { opacity: 0.6; }
 
 /* ── Outline ────────────────────────────────────────── */
 .tree { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: 4px; outline: none; }
@@ -183,16 +168,15 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .check::after, .chevron::after { content: ""; position: absolute; inset: -4px; }
 .check-done { background: var(--green); border-color: var(--green); font-weight: 600; }
 .row-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row-progress { font-size: 12px; font-family: var(--mono); color: var(--text-3); }
+.row-progress { font-size: 12px; color: var(--text-3); }
 .row-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
 .badge-now {
-  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 12px; font-weight: 600;
   padding: 1px 8px; border-radius: 99px; color: var(--green); background: rgba(52, 211, 153, 0.12);
 }
 .row-actions { display: none; gap: 2px; }
 .row-focused .row-actions { display: flex; }
 @media (hover: hover) { .row:hover .row-actions { display: flex; } }
-@media (hover: none) { .row-actions { display: flex; } }
 .row-edit { padding-right: 8px; }
 .row-input { padding: 4px 8px !important; }
 .add-row { width: 100%; text-align: left; padding: 8px 12px; border: 0; background: none; color: var(--text-3); cursor: pointer; border-radius: var(--r-sm); }
@@ -323,3 +307,13 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .confirm-body { color: var(--text-2); }
 .confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
 input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+/* ── Calm layout: labelled sections, room between them ── */
+.section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+h3.section-label { margin-bottom: -8px; }
+.workflow { gap: 16px; }
+.disclosure { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+.disclosure-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.disclosure .inspector { border: 0; padding: 0; }
+.inspector-head { order: 10; }
+.inbox { border-top: 1px solid var(--border); padding-top: 8px; }

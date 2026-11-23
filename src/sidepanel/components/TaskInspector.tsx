@@ -45,7 +45,6 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
   return (
     <section className="inspector" aria-label={`Details for ${task.title}`}>
       <header className="inspector-head">
-        <h3>{task.title}</h3>
         <div className="inspector-tools">
           <label className="select-label">
             <span className="sr-only">Timebox</span>

@@ -7,12 +7,12 @@ import { categoryOf } from "../lib/categories";
 import type { Ui } from "../lib/ui";
 import { useNow } from "../hooks/useOrion";
 import { ResumeCard } from "./ResumeCard";
-import { MilestoneStrip } from "./MilestoneStrip";
 import { Outline } from "./Outline";
 import { TaskInspector } from "./TaskInspector";
 import { InboxPanel } from "./InboxPanel";
 import { SwitchPrompt } from "./SwitchPrompt";
 import { ShortcutHelp } from "./ShortcutHelp";
+import { Disclosure } from "./Disclosure";
 
 interface Props {
   workflow: IWorkflowState;
@@ -93,28 +93,25 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
         </button>
         <div className="wf-title">
           <div className="wf-cat">
-            {cat?.icon} {cat?.label ?? "Workflow"} {isActiveWorkflow && <span className="live-dot" aria-label="active" />}
+            {cat?.icon} {cat?.label ?? "Workflow"}
           </div>
           <h2>{workflow.name}</h2>
         </div>
-        {activeTask ? (
-          <button className="btn btn-ghost btn-sm" onClick={() => requestSwitch(null)}>
-            Pause
-          </button>
-        ) : null}
         <button className="icon-btn" aria-label="Keyboard shortcuts" data-tip="Keyboard shortcuts (?)" onClick={() => setHelp(true)}>
           ?
         </button>
       </header>
 
-      <div className="wf-progress" aria-label={`${progress.done} of ${progress.total} tasks done`}>
-        <span className="bar">
-          <span style={{ transform: `scaleX(${pct / 100})` }} />
-        </span>
-        <span className="muted small">
-          {progress.done}/{progress.total}
-        </span>
-      </div>
+      {progress.total > 0 && (
+        <div className="wf-progress" aria-label={`${progress.done} of ${progress.total} tasks done`}>
+          <span className="muted small" aria-hidden="true">
+            {progress.done} of {progress.total} done
+          </span>
+          <span className="bar">
+            <span style={{ transform: `scaleX(${pct / 100})` }} />
+          </span>
+        </div>
+      )}
 
       {pending && activeTask && (
         <SwitchPrompt
@@ -136,17 +133,17 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
           ui={ui}
           onResume={(id) => requestSwitch(id)}
           onFocus={setFocusedId}
+          onPause={() => requestSwitch(null)}
         />
       )}
 
       {!activeTask && !resumeTask && workflow.rootNodes.length > 0 && (
         <p className="hint-bar">
-          Pick a task and press <kbd>.</kbd> (or ▶) to start. OrionHUD saves your place whenever you switch or step away.
+          Hover a task and press ▶ (or select it and press <kbd>.</kbd>) to start. OrionHUD saves your place whenever you switch or step away.
         </p>
       )}
 
-      <MilestoneStrip roots={workflow.rootNodes} onFocus={setFocusedId} />
-
+      <h3 className="section-label">Plan</h3>
       <Outline
         workflow={workflow}
         activeId={activeId}
@@ -157,7 +154,11 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
         onHelp={() => setHelp(true)}
       />
 
-      {focused && <TaskInspector key={focused.id} workflow={workflow} task={focused} now={now} ui={ui} />}
+      {focused && (
+        <Disclosure label={<>Notes for “{focused.title}”</>} count={focused.microNotes.length}>
+          <TaskInspector key={focused.id} workflow={workflow} task={focused} now={now} ui={ui} />
+        </Disclosure>
+      )}
 
       <InboxPanel workflow={workflow} focusedId={focusedId} activeId={activeId} now={now} ui={ui} />
 
