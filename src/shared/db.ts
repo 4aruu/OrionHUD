@@ -1,5 +1,6 @@
 import { openDB, type IDBPDatabase } from "idb";
-import type { IAppMeta, IWorkflowState, ITaskNode } from "./types";
+import type { IAppMeta, ILiveTabs, IWorkflowState } from "./types";
+import { normalizeLiveTabs, normalizeMeta, normalizeWorkflow } from "./normalize";
 
 const DB_NAME = "orion-hud";
 const DB_VERSION = 1;
@@ -18,161 +19,138 @@ function getDB(): Promise<IDBPDatabase> {
           db.createObjectStore("meta");
         }
       },
+      // Another context (e.g. a newer extension version) wants to upgrade:
+      // let it, and reconnect lazily on the next call.
+      blocking() {
+        void dbPromise?.then((db) => db.close());
+        dbPromise = null;
+      },
+    }).catch((err: unknown) => {
+      dbPromise = null; // don't cache a failed open forever
+      throw err;
     });
   }
   return dbPromise;
 }
 
-// --- Per-key async lock -----------------------------------------------
+// --- Atomic read-modify-write ------------------------------------------
 //
-// IndexedDB transactions are atomic, but a read-modify-write sequence
-// (get workflow, mutate the JS object, put it back) is NOT atomic across
-// two concurrent callers. Two notes added to the same workflow within
-// the same tick can silently overwrite one another. This lock forces
-// read-modify-write sequences against the same key to run one at a time,
-// even when called concurrently, without blocking unrelated keys.
+// The side panel and the service worker are separate JS contexts with
+// separate memory, so an in-memory lock can't stop them overwriting each
+// other's writes. IndexedDB can: readwrite transactions on the same store
+// are serialized by the browser across every connection. So each mutation
+// does its get + put inside ONE transaction, with a synchronous mutator
+// (an await on anything else would let the transaction auto-commit early).
 
-const locks = new Map<string, Promise<unknown>>();
-
-async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
-  const prior = locks.get(key) ?? Promise.resolve();
-  const settledPrior = prior.catch(() => undefined);
-  const run = settledPrior.then(fn);
-  locks.set(key, run.catch(() => undefined));
-  return run;
+function abortQuietly(tx: { abort(): void; done: Promise<void> }): void {
+  // done rejects with AbortError once we abort; that's expected, not a bug.
+  tx.done.catch(() => undefined);
+  try {
+    tx.abort();
+  } catch {
+    /* already finished */
+  }
 }
 
-// --- Workflow state (structural, always written immediately) ----------
-
-// ─── Runtime type guards ─────────────────────────────────────────────────
-// Replace blind `as Type` casts so that schema changes between extension
-// versions produce a safe default rather than a silent runtime crash.
-
-function parseMeta(raw: unknown): IAppMeta {
-  if (!raw || typeof raw !== "object") return { ...DEFAULT_META, lastActiveTimestamp: Date.now() };
-  const r = raw as Record<string, unknown>;
-  return {
-    activeWorkflowId:
-      typeof r["activeWorkflowId"] === "string" ? r["activeWorkflowId"] : null,
-    currentActiveNodeId:
-      typeof r["currentActiveNodeId"] === "string" ? r["currentActiveNodeId"] : null,
-    lastActiveTimestamp:
-      typeof r["lastActiveTimestamp"] === "number"
-        ? r["lastActiveTimestamp"]
-        : Date.now(),
-    blacklistedSince:
-      typeof r["blacklistedSince"] === "number" ? r["blacklistedSince"] : null,
-  };
-}
-
-function parseWorkflow(raw: unknown): IWorkflowState | null {
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as Record<string, unknown>;
-  if (typeof r["id"] !== "string" || !r["id"]) return null;
-  if (typeof r["name"] !== "string" || !r["name"]) return null;
-  if (typeof r["globalGracePeriodMins"] !== "number") return null;
-  // rootNodes and blacklistedDomains: trust if present, default to [] if not.
-  // Deep node validation is prohibitively expensive for nested trees; the
-  // app only writes nodes through mutateWorkflow which already validates via TS.
-  return {
-    id: r["id"],
-    name: r["name"],
-    category: typeof r["category"] === "string" ? r["category"] : undefined,
-    globalGracePeriodMins: r["globalGracePeriodMins"],
-    blacklistedDomains: Array.isArray(r["blacklistedDomains"])
-      ? (r["blacklistedDomains"] as string[]).filter((d) => typeof d === "string")
-      : [],
-    rootNodes: Array.isArray(r["rootNodes"]) ? (r["rootNodes"] as ITaskNode[]) : [],
-  };
-}
-
-export async function getWorkflow(
-  id: string
-): Promise<IWorkflowState | undefined> {
-  const db = await getDB();
-  const raw = await db.get("workflows", id);
-  const parsed = parseWorkflow(raw);
-  return parsed ?? undefined;
-}
-
-export async function listWorkflowIds(): Promise<string[]> {
-  const db = await getDB();
-  return db.getAllKeys("workflows") as Promise<string[]>;
-}
-
-export async function commitWorkflow(state: IWorkflowState): Promise<void> {
-  await withLock(`workflow:${state.id}`, async () => {
-    const db = await getDB();
-    await db.put("workflows", state);
-  });
-}
-
-// Read-modify-write helper. The lock guarantees `current` reflects the
-// most recent committed state even if two callers invoke this for the
-// same id at nearly the same time.
 export async function mutateWorkflow(
   id: string,
   mutator: (state: IWorkflowState) => IWorkflowState
 ): Promise<IWorkflowState> {
-  return withLock(`workflow:${id}`, async () => {
-    const db = await getDB();
-    const current = (await db.get("workflows", id)) as
-      | IWorkflowState
-      | undefined;
-    if (!current) {
-      throw new Error(`Workflow ${id} not found`);
-    }
+  const db = await getDB();
+  const tx = db.transaction("workflows", "readwrite");
+  try {
+    const current = normalizeWorkflow(await tx.store.get(id));
+    if (!current) throw new Error(`Workflow ${id} not found`);
     const next = mutator(current);
-    await db.put("workflows", next);
+    await tx.store.put(next);
+    await tx.done;
     return next;
-  });
+  } catch (err) {
+    abortQuietly(tx);
+    throw err;
+  }
+}
+
+export async function mutateMeta(mutator: (meta: IAppMeta) => IAppMeta): Promise<IAppMeta> {
+  const db = await getDB();
+  const tx = db.transaction("meta", "readwrite");
+  try {
+    const current = normalizeMeta(await tx.store.get(META_KEY), Date.now());
+    const next = mutator(current);
+    await tx.store.put(next, META_KEY);
+    await tx.done;
+    return next;
+  } catch (err) {
+    abortQuietly(tx);
+    throw err;
+  }
+}
+
+// --- Plain reads/writes -------------------------------------------------
+
+export async function getWorkflow(id: string): Promise<IWorkflowState | undefined> {
+  const db = await getDB();
+  return normalizeWorkflow(await db.get("workflows", id)) ?? undefined;
+}
+
+export async function listWorkflowIds(): Promise<string[]> {
+  const db = await getDB();
+  return (await db.getAllKeys("workflows")).filter((k): k is string => typeof k === "string");
+}
+
+/** All workflows, newest first. Unreadable records are skipped, not fatal. */
+export async function listWorkflows(): Promise<IWorkflowState[]> {
+  const db = await getDB();
+  return (await db.getAll("workflows"))
+    .map(normalizeWorkflow)
+    .filter((w): w is IWorkflowState => w !== null)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function commitWorkflow(state: IWorkflowState): Promise<void> {
+  const db = await getDB();
+  await db.put("workflows", state);
+}
+
+/** All-or-nothing bulk write (import). */
+export async function putWorkflows(list: IWorkflowState[]): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction("workflows", "readwrite");
+  for (const wf of list) void tx.store.put(wf);
+  await tx.done;
 }
 
 export async function deleteWorkflow(id: string): Promise<void> {
-  await withLock(`workflow:${id}`, async () => {
-    const db = await getDB();
-    await db.delete("workflows", id);
-  });
+  const db = await getDB();
+  await db.delete("workflows", id);
 }
-
-// --- App meta (small, high-frequency) ----------------------------------
-
-const DEFAULT_META: IAppMeta = {
-  activeWorkflowId: null,
-  currentActiveNodeId: null,
-  lastActiveTimestamp: Date.now(),
-  blacklistedSince: null,
-};
 
 export async function getMeta(): Promise<IAppMeta> {
   const db = await getDB();
-  const raw = await db.get("meta", META_KEY);
-  return parseMeta(raw);
+  return normalizeMeta(await db.get("meta", META_KEY), Date.now());
 }
 
-// Always available for anything structural about meta (e.g. switching
-// the active workflow), never debounced.
+/** Whole-object write. Prefer mutateMeta when other fields may be changing concurrently. */
 export async function commitMeta(meta: IAppMeta): Promise<void> {
   const db = await getDB();
   await db.put("meta", meta, META_KEY);
 }
 
-// Throttled path, ONLY for high-frequency fields that are safe to lose a
-// few hundred milliseconds of (e.g. a countdown timer redrawing every
-// second). If the service worker dies before this fires, the worst case
-// is a slightly stale timeRemainingMs on next read, which gets
-// recomputed from startedAt/allocatedTimeMs anyway, never use this for
-// activeWorkflowId or currentActiveNodeId changes.
-let throttleTimer: ReturnType<typeof setTimeout> | null = null;
-let pendingMeta: IAppMeta | null = null;
+const LIVE_TABS_KEY = "liveTabs";
 
-export function commitMetaThrottled(meta: IAppMeta, throttleMs = 250): void {
-  pendingMeta = meta;
-  if (throttleTimer) return;
-  throttleTimer = setTimeout(() => {
-    throttleTimer = null;
-    const toWrite = pendingMeta;
-    pendingMeta = null;
-    if (toWrite) void commitMeta(toWrite);
-  }, throttleMs);
+export async function getLiveTabs(): Promise<ILiveTabs | null> {
+  const db = await getDB();
+  return normalizeLiveTabs(await db.get("meta", LIVE_TABS_KEY));
+}
+
+export async function setLiveTabs(live: ILiveTabs | null): Promise<void> {
+  const db = await getDB();
+  if (live) await db.put("meta", live, LIVE_TABS_KEY);
+  else await db.delete("meta", LIVE_TABS_KEY);
+}
+
+/** Test-only: drop the cached connection so a fresh one is opened. */
+export function __resetConnectionForTests(): void {
+  void dbPromise?.then((db) => db.close());
+  dbPromise = null;
 }

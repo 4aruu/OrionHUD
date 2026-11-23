@@ -1,122 +1,109 @@
 import "fake-indexeddb/auto";
-import { beforeEach, describe, expect, it } from "vitest";
-import { commitWorkflow, getWorkflow, mutateWorkflow } from "../src/shared/db";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  commitWorkflow,
+  getMeta,
+  getWorkflow,
+  listWorkflows,
+  mutateMeta,
+  mutateWorkflow,
+  putWorkflows,
+} from "../src/shared/db";
 import type { IWorkflowState } from "../src/shared/types";
+import { makeTask, makeWorkflow } from "./fixtures";
 
-function baseWorkflow(): IWorkflowState {
+function addNoteTo(state: IWorkflowState, content: string): IWorkflowState {
+  const task = state.rootNodes[0];
+  if (!task) throw new Error("expected root task");
   return {
-    id: "wf-1",
-    name: "Test workflow",
-    globalGracePeriodMins: 5,
-    blacklistedDomains: [],
+    ...state,
     rootNodes: [
       {
-        id: "task-1",
-        parentId: null,
-        title: "Root task",
-        status: "ACTIVE",
-        allocatedTimeMs: null,
-        timeRemainingMs: null,
-        startedAt: Date.now(),
-        completedAt: null,
-        targetUrl: null,
-        microNotes: [],
-        subTasks: [],
+        ...task,
+        microNotes: [
+          ...task.microNotes,
+          { id: content, content, timestamp: 1, isActionableCommand: false, kind: "note", sourceUrl: null },
+        ],
       },
+      ...state.rootNodes.slice(1),
     ],
   };
 }
 
+const notes = async () =>
+  ((await getWorkflow("wf-1"))?.rootNodes[0]?.microNotes ?? []).map((n) => n.content).sort();
+
 describe("workflow storage", () => {
   beforeEach(async () => {
-    await commitWorkflow(baseWorkflow());
+    await commitWorkflow(makeWorkflow([makeTask("task-1", [], { status: "ACTIVE" })]));
   });
 
   it("persists and retrieves a workflow", async () => {
-    const wf = await getWorkflow("wf-1");
-    expect(wf?.name).toBe("Test workflow");
+    expect((await getWorkflow("wf-1"))?.name).toBe("Test workflow");
   });
 
   it("does not lose updates when two notes are added concurrently", async () => {
-    const addNote = (content: string) =>
-      mutateWorkflow("wf-1", (state) => {
-        const task = state.rootNodes[0];
-        if (!task) throw new Error("expected root task");
-        return {
-          ...state,
-          rootNodes: [
-            {
-              ...task,
-              microNotes: [
-                ...task.microNotes,
-                {
-                  id: content,
-                  content,
-                  timestamp: Date.now(),
-                  isActionableCommand: false,
-                },
-              ],
-            },
-            ...state.rootNodes.slice(1),
-          ],
-        };
-      });
-
-    // Fired without awaiting each other. Without the per-key lock in
-    // db.ts, this is the classic lost-update race: both calls read the
-    // same "0 notes" snapshot, both compute "1 note", and whichever
-    // put() lands second wins, silently dropping the other note.
-    await Promise.all([addNote("note-a"), addNote("note-b")]);
-
-    const wf = await getWorkflow("wf-1");
-    const notes = (wf?.rootNodes[0]?.microNotes ?? [])
-      .map((n) => n.content)
-      .sort();
-    expect(notes).toEqual(["note-a", "note-b"]);
+    await Promise.all([
+      mutateWorkflow("wf-1", (s) => addNoteTo(s, "note-a")),
+      mutateWorkflow("wf-1", (s) => addNoteTo(s, "note-b")),
+    ]);
+    expect(await notes()).toEqual(["note-a", "note-b"]);
   });
 
-  it("control: reproduces the lost update WITHOUT the lock", async () => {
-    // Same scenario, but bypassing mutateWorkflow's lock to do a raw
-    // get-then-put, to prove the race is real and not a strawman.
-    const rawAddNote = async (content: string) => {
+  it("concurrent mutate across connections keeps both writes", async () => {
+    // A second, independent copy of db.ts = a second IndexedDB connection,
+    // exactly like the side panel vs the service worker.
+    vi.resetModules();
+    const other = await import("../src/shared/db");
+    await Promise.all([
+      mutateWorkflow("wf-1", (s) => addNoteTo(s, "panel")),
+      other.mutateWorkflow("wf-1", (s) => addNoteTo(s, "worker")),
+      mutateWorkflow("wf-1", (s) => addNoteTo(s, "panel-2")),
+      other.mutateWorkflow("wf-1", (s) => addNoteTo(s, "worker-2")),
+    ]);
+    expect(await notes()).toEqual(["panel", "panel-2", "worker", "worker-2"]);
+    other.__resetConnectionForTests();
+  });
+
+  it("control: a naive get-then-put loses one of two concurrent writes", async () => {
+    const raw = async (content: string) => {
       const state = await getWorkflow("wf-1");
-      if (!state) throw new Error("missing workflow");
-      const task = state.rootNodes[0];
-      if (!task) throw new Error("expected root task");
-      // Simulate real-world interleaving: another async task (e.g. an
-      // IndexedDB round trip) gets a chance to run between the read and
-      // the write.
       await new Promise((r) => setTimeout(r, 5));
-      const next: IWorkflowState = {
-        ...state,
-        rootNodes: [
-          {
-            ...task,
-            microNotes: [
-              ...task.microNotes,
-              {
-                id: content,
-                content,
-                timestamp: Date.now(),
-                isActionableCommand: false,
-              },
-            ],
-          },
-          ...state.rootNodes.slice(1),
-        ],
-      };
-      await commitWorkflow(next);
+      await commitWorkflow(addNoteTo(state!, content));
     };
+    await Promise.all([raw("note-a"), raw("note-b")]);
+    expect((await notes()).length).toBeLessThan(2);
+  });
 
-    await Promise.all([rawAddNote("note-a"), rawAddNote("note-b")]);
+  it("a throwing mutator leaves stored data untouched", async () => {
+    await expect(
+      mutateWorkflow("wf-1", () => {
+        throw new Error("boom");
+      })
+    ).rejects.toThrow("boom");
+    expect((await getWorkflow("wf-1"))?.rootNodes).toHaveLength(1);
+  });
 
-    const wf = await getWorkflow("wf-1");
-    const notes = wf?.rootNodes[0]?.microNotes.map((n) => n.content) ?? [];
-    // This is the bug: exactly one note survives, not two. Asserting
-    // notes.length === 1 here would make the "control" test look green
-    // for the wrong reason, so instead assert it's LESS than the
-    // correct count to show the data loss without hardcoding which
-    // specific note won the race (that part is nondeterministic).
-    expect(notes.length).toBeLessThan(2);
+  it("mutating a missing workflow rejects", async () => {
+    await expect(mutateWorkflow("nope", (s) => s)).rejects.toThrow("not found");
+  });
+
+  it("normalizes on read, so old records load", async () => {
+    await putWorkflows([{ id: "old", name: "Old", globalGracePeriodMins: 5, rootNodes: [] } as unknown as IWorkflowState]);
+    const old = await getWorkflow("old");
+    expect(old?.inbox).toEqual([]);
+    expect((await listWorkflows()).map((w) => w.id)).toContain("old");
+  });
+});
+
+describe("meta storage", () => {
+  it("mutateMeta is atomic for concurrent field updates", async () => {
+    await Promise.all([
+      mutateMeta((m) => ({ ...m, activeWorkflowId: "wf-1" })),
+      mutateMeta((m) => ({ ...m, lastResumeShownAt: 123 })),
+    ]);
+    const meta = await getMeta();
+    expect(meta.activeWorkflowId).toBe("wf-1");
+    expect(meta.lastResumeShownAt).toBe(123);
   });
 });

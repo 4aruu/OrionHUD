@@ -9,9 +9,28 @@ export const LIMITS = {
   category:      50,
   domain:       253, // RFC 1035 maximum total length
   graceMins:     { min: 0, max: 1440 }, // 0–24 hours
-  maxTasks:      200,
+  maxTasks:      200, // tasks entered in the create form
   maxDomains:     50,
+  maxNodes:      500, // whole tree, per workflow
+  maxDepth:        8, // root = depth 1
+  nextStep:      280,
+  inboxText:     500,
+  maxInbox:      100,
+  savePoints:     10, // per task
+  savedTabs:      30, // per save point
+  tabTitle:      200,
+  url:          2048,
+  maxNotes:      200, // per task
+  importBytes: 5 * 1024 * 1024,
 } as const;
+
+export function validateNextStep(raw: string): string | null {
+  return validateLabel(raw, LIMITS.nextStep);
+}
+
+export function validateInboxText(raw: string): string | null {
+  return validateLabel(raw, LIMITS.inboxText);
+}
 
 // ─── Domain validation ─────────────────────────────────────────────────────
 // Accepts bare hostnames like "reddit.com" or "app.slack.com".

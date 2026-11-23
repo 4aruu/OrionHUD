@@ -1,15 +1,62 @@
-// Per-workflow state, not a single global blob. This is what lets
-// commitWorkflow() below write only the workflow that changed instead
-// of re-serializing every workflow the user has ever created.
+// Domain model. Per-workflow state, not a single global blob: commitWorkflow
+// writes only the workflow that changed.
+//
+// Every field added after v0.1 is defaulted by normalize.ts on read, so data
+// written by older versions keeps loading.
+
+export type NoteKind = "note" | "decision";
 
 export interface IMicroNote {
   id: string;
   content: string;
   timestamp: number;
   isActionableCommand: boolean;
+  // "decision" = pinned from an AI reply or page selection, or marked by the
+  // user. Decisions are append-only and itemized on purpose: repeatedly
+  // rewritten summaries degrade, itemized logs don't.
+  kind: NoteKind;
+  sourceUrl: string | null;
 }
 
 export type NodeStatus = "PENDING" | "ACTIVE" | "DONE" | "SNOOZED";
+
+export type TabKind = "ai-thread" | "page";
+
+export interface ISavedTab {
+  url: string;
+  title: string;
+  kind: TabKind;
+  // Human name of the AI product for ai-thread tabs ("Claude", "ChatGPT").
+  vendor: string | null;
+}
+
+// "restart": recovered on browser start from the rolling tab snapshot, so a
+// crash or force-quit still has a save point.
+export type SavePointTrigger = "switch" | "idle" | "manual" | "stop" | "complete" | "restart";
+
+// Rolling snapshot of the active task's tabs, refreshed every couple of
+// minutes while the tabs permission is granted.
+export interface ILiveTabs {
+  workflowId: string;
+  taskId: string;
+  tabs: ISavedTab[];
+  updatedAt: number;
+}
+
+// "window": every normal tab in the focused window (needs optional `tabs`).
+// "active": only the active tab (readable via activeTab grant).
+// "none":   tab URLs weren't readable at capture time.
+export type TabsSource = "window" | "active" | "none";
+
+export interface ISavePoint {
+  id: string;
+  createdAt: number;
+  trigger: SavePointTrigger;
+  // The one line that makes resuming cheap: what you were about to do.
+  nextStep: string | null;
+  tabs: ISavedTab[];
+  tabsSource: TabsSource;
+}
 
 export interface ITaskNode {
   id: string;
@@ -20,51 +67,54 @@ export interface ITaskNode {
   timeRemainingMs: number | null;
   startedAt: number | null;
   completedAt: number | null;
-  // Null means "no URL check for this task", not "unset". The Time's
-  // Up evaluator treats null as always on-target (see evaluateDrift in
-  // urlMatching.ts). This field did not exist in the original spec's
-  // ITaskNode even though section 5.1 depends on comparing against it.
+  // Null means "no URL check for this task". The Time's Up evaluator treats
+  // null as always on-target (see evaluateDrift in urlMatching.ts).
   targetUrl: string | null;
+  isMilestone: boolean;
+  collapsed: boolean;
   microNotes: IMicroNote[];
+  // Newest first, capped (LIMITS.savePoints).
+  savePoints: ISavePoint[];
   subTasks: ITaskNode[];
+}
+
+export interface IInboxItem {
+  id: string;
+  text: string;
+  createdAt: number;
+  // Task that was active when the thought was captured, for context.
+  taskId: string | null;
+  sourceUrl: string | null;
 }
 
 export interface IWorkflowState {
   id: string;
   name: string;
-  // Optional: used for grouping and template selection in the UI.
-  // Not enforced by the engine — purely display/organisational metadata.
-  // Examples: 'Cloud / DevOps', 'Software', 'Data & Analytics',
-  // 'Design / UX', 'Research', 'Management', 'Custom'.
+  // Display/organisational metadata only, not enforced by the engine.
   category?: string;
+  createdAt: number;
   globalGracePeriodMins: number;
-  // Distraction Guard (spec 5.2). The original doc never specified a
-  // schema for "blacklisted domains", it just referenced the concept.
-  // Workflow-level, not global: different workflows plausibly have
-  // different notions of "off-task" (Slack is a distraction during
-  // deep coding, it's the whole job during an on-call rotation).
+  // Distraction Guard. Workflow-level: Slack is a distraction during deep
+  // coding and the whole job during an on-call rotation.
   blacklistedDomains: string[];
   rootNodes: ITaskNode[];
+  // Side quests captured mid-flow, triaged later.
+  inbox: IInboxItem[];
 }
 
-// Small, frequently-updated pointer state. Deliberately separate from
-// IWorkflowState so a timer tick never triggers a rewrite of an entire
-// task tree.
+// Small, frequently-updated pointer state, separate from IWorkflowState so a
+// pointer change never rewrites a whole task tree.
 //
-// Note there is no `isIdleStateFrozen` field. The original spec's model
-// of "freezing" state in memory during AFK doesn't hold up: MV3 service
-// workers can be killed at any point regardless of idle status, so
-// nothing can be relied on to sit frozen in memory. Instead every
-// mutation is written immediately (see commitWorkflow/mutateWorkflow in
-// db.ts) and lastActiveTimestamp is the only thing needed to reconstruct
-// AFK duration after a restart.
+// MV3 service workers can be killed at any point, so nothing is "frozen" in
+// memory: every mutation is written immediately and lastActiveTimestamp is
+// enough to reconstruct time away after a restart.
 export interface IAppMeta {
   activeWorkflowId: string | null;
   currentActiveNodeId: string | null;
   lastActiveTimestamp: number;
-  // Set to Date.now() when the user first navigates to a blacklisted
-  // domain during an active workflow. Cleared when they leave.
-  // Persisted here (not a module variable) because MV3 service workers
-  // can be killed at any point — a module variable won't survive.
+  // Persisted (not a module variable) because the worker can die mid-grace.
   blacklistedSince: number | null;
+  // When the resume card was last dismissed; a save point newer than this
+  // brings the card back.
+  lastResumeShownAt: number | null;
 }

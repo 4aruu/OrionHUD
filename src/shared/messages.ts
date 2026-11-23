@@ -1,59 +1,49 @@
-// Typed discriminated union for every message OrionHUD sends internally.
-// All chrome.runtime.sendMessage / onMessage callers must use these types
-// and parseExtensionMessage() — never cast raw message objects directly.
+// Every runtime message OrionHUD sends. All onMessage handlers must
+// (1) check the sender is this extension (see isOwnSender) and
+// (2) parse through parseExtensionMessage. Never cast raw messages.
 
-import type { IWorkflowState } from "./types";
-import type { DriftStatus } from "./urlMatching";
+import { LIMITS } from "./validators";
+
+export type CaptureMode = "save" | "inbox";
+
+export type StateChangeReason = "idle" | "active" | "capture" | "menu" | "command" | "alarm";
 
 export type ExtensionMessage =
-  | {
-      type: "ORION_SHOW_RECOVERY";
-      afkMs: number;
-      workflow: IWorkflowState;
-      currentActiveNodeId: string | null;
-    }
-  | {
-      type: "ORION_TIMES_UP";
-      taskId: string;
-      taskTitle: string;
-      drift: DriftStatus;
-    };
+  | { type: "ORION_STATE_CHANGED"; reason: StateChangeReason }
+  | { type: "ORION_CAPTURE_SUBMIT"; mode: CaptureMode; text: string };
 
-// Runtime type-guard. Returns null for any message that does not match a
-// known shape — callers must treat null as "ignore this message".
-// This is the only place where raw unknown → typed message coercion happens.
+const REASONS: StateChangeReason[] = ["idle", "active", "capture", "menu", "command", "alarm"];
+
 export function parseExtensionMessage(raw: unknown): ExtensionMessage | null {
-  if (!raw || typeof raw !== "object") return null;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const msg = raw as Record<string, unknown>;
 
   switch (msg["type"]) {
-    case "ORION_SHOW_RECOVERY": {
-      if (typeof msg["afkMs"] !== "number") return null;
-      if (!msg["workflow"] || typeof msg["workflow"] !== "object") return null;
-      return {
-        type: "ORION_SHOW_RECOVERY",
-        afkMs: msg["afkMs"],
-        workflow: msg["workflow"] as IWorkflowState,
-        currentActiveNodeId:
-          typeof msg["currentActiveNodeId"] === "string"
-            ? msg["currentActiveNodeId"]
-            : null,
-      };
+    case "ORION_STATE_CHANGED": {
+      const reason = REASONS.find((r) => r === msg["reason"]);
+      return reason ? { type: "ORION_STATE_CHANGED", reason } : null;
     }
-    case "ORION_TIMES_UP": {
-      if (typeof msg["taskId"] !== "string") return null;
-      if (typeof msg["taskTitle"] !== "string") return null;
-      const drift = msg["drift"];
-      if (drift !== "on-target" && drift !== "drifted" && drift !== "unknown")
-        return null;
-      return {
-        type: "ORION_TIMES_UP",
-        taskId: msg["taskId"],
-        taskTitle: msg["taskTitle"],
-        drift,
-      };
+    case "ORION_CAPTURE_SUBMIT": {
+      const mode = msg["mode"];
+      const text = msg["text"];
+      if (mode !== "save" && mode !== "inbox") return null;
+      if (typeof text !== "string") return null;
+      // Empty text is valid for "save" (a save point without a next step).
+      if (text.length > LIMITS.inboxText) return null;
+      if (mode === "inbox" && text.trim().length === 0) return null;
+      return { type: "ORION_CAPTURE_SUBMIT", mode, text };
     }
     default:
       return null;
   }
+}
+
+/**
+ * Only accept messages from this extension's own pages and from content
+ * scripts it injected. Web pages can't reach onMessage without
+ * externally_connectable, but this keeps that true even if the manifest
+ * changes later.
+ */
+export function isOwnSender(sender: { id?: string }, ownId: string): boolean {
+  return typeof sender.id === "string" && sender.id === ownId;
 }

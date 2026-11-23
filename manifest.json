@@ -1,10 +1,22 @@
 {
   "manifest_version": 3,
   "name": "OrionHUD",
-  "version": "0.1.0",
-  "description": "Context-aware workflow HUD for deep work sessions.",
-  "permissions": ["storage", "alarms", "idle", "sidePanel", "activeTab", "scripting", "notifications"],
-  "optional_host_permissions": ["<all_urls>"],
+  "version": "0.2.0",
+  "description": "Pick up exactly where you left off: milestones, nested subtasks, AI threads and tabs, saved automatically when you get interrupted.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "idle",
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "notifications",
+    "contextMenus",
+    "tabGroups"
+  ],
+  "optional_permissions": ["tabs"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },
@@ -14,6 +26,16 @@
   },
   "side_panel": {
     "default_path": "src/sidepanel/index.html"
+  },
+  "commands": {
+    "save-point": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "Save a save point for the active task"
+    },
+    "quick-capture": {
+      "suggested_key": { "default": "Alt+Shift+Q" },
+      "description": "Capture a side quest to the inbox"
+    }
   },
   "action": {
     "default_title": "OrionHUD",
