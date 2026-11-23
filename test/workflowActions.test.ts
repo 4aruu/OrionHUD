@@ -9,12 +9,16 @@ import {
   addTask,
   completeTask,
   createWorkflow,
+  deleteNote,
   deleteTask,
+  dismissInboxItem,
   exportBackup,
   importBackup,
   indentTask,
   promoteInboxItem,
   recordSavePoint,
+  restoreInboxItem,
+  restoreNote,
   restoreTask,
   startWorkflow,
   stopWorkflow,
@@ -202,6 +206,34 @@ describe("workflow orchestration", () => {
     const notes = findTaskNode((await wf(w.id)).rootNodes, t.id)!.microNotes;
     expect(notes[0]).toMatchObject({ kind: "decision", sourceUrl: "https://claude.ai/chat/1" });
     expect(notes[1]).toMatchObject({ kind: "note", sourceUrl: null, isActionableCommand: true });
+  });
+
+  it("deleting a note can be undone in place, once", async () => {
+    const w = await createWorkflow("Undo notes", 5);
+    const t = await addTask(w.id, null, "T");
+    await addNote(w.id, t.id, "first");
+    const mid = await addNote(w.id, t.id, "second", "decision");
+    await addNote(w.id, t.id, "third");
+    const removed = await deleteNote(w.id, t.id, mid.id);
+    expect(removed).toMatchObject({ index: 1, note: { id: mid.id, kind: "decision" } });
+    expect(await deleteNote(w.id, t.id, mid.id)).toBeNull();
+    await restoreNote(w.id, removed!);
+    await restoreNote(w.id, removed!); // a double click on Undo doesn't duplicate
+    const notes = findTaskNode((await wf(w.id)).rootNodes, t.id)!.microNotes;
+    expect(notes.map((n) => n.content)).toEqual(["first", "second", "third"]);
+  });
+
+  it("dismissing an inbox item can be undone in place, once", async () => {
+    const w = await createWorkflow("Undo inbox", 5);
+    await addInboxItem(w.id, "a");
+    const b = await addInboxItem(w.id, "b");
+    await addInboxItem(w.id, "c");
+    const removed = await dismissInboxItem(w.id, b.id);
+    expect(removed?.index).toBe(1);
+    expect(await dismissInboxItem(w.id, b.id)).toBeNull();
+    await restoreInboxItem(w.id, removed!);
+    await restoreInboxItem(w.id, removed!);
+    expect((await wf(w.id)).inbox.map((i) => i.text)).toEqual(["c", "b", "a"]);
   });
 
   it("inbox promote creates a subtask and removes the item", async () => {

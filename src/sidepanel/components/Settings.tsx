@@ -4,6 +4,14 @@ import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
 import type { Ui } from "../lib/ui";
 import { BridgeSettings } from "./BridgeSettings";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { walk } from "../../shared/taskTree";
+
+function taskCount(w: IWorkflowState): number {
+  let n = 0;
+  walk(w.rootNodes, () => n++);
+  return n;
+}
 
 interface Props {
   workflows: IWorkflowState[];
@@ -15,6 +23,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
   const [tabsOn, setTabsOn] = useState<boolean | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pendingDelete = workflows.find((w) => w.id === confirmDelete) ?? null;
 
   useEffect(() => {
     void hasTabsPermission().then(setTabsOn);
@@ -56,7 +65,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
   return (
     <div className="settings">
       <header className="wf-head">
-        <button className="icon-btn" aria-label="Back" onClick={onBack}>
+        <button className="icon-btn" aria-label="Back" data-tip="Back" data-tip-align="start" onClick={onBack}>
           ←
         </button>
         <div className="wf-title">
@@ -127,27 +136,30 @@ export function Settings({ workflows, ui, onBack }: Props) {
             {workflows.map((w) => (
               <li key={w.id} className="delete-row">
                 <span>{w.name}</span>
-                {confirmDelete === w.id ? (
-                  <>
-                    <button
-                      className="btn btn-danger btn-xs"
-                      onClick={() => void ui.run(() => deleteWorkflowCascade(w.id), `Deleted “${w.name}”.`).then(() => setConfirmDelete(null))}
-                    >
-                      Delete forever
-                    </button>
-                    <button className="btn btn-ghost btn-xs" onClick={() => setConfirmDelete(null)}>
-                      Keep
-                    </button>
-                  </>
-                ) : (
-                  <button className="btn btn-ghost btn-xs" onClick={() => setConfirmDelete(w.id)}>
-                    Delete…
-                  </button>
-                )}
+                <button className="btn btn-ghost btn-sm" aria-label={`Delete ${w.name}`} onClick={() => setConfirmDelete(w.id)}>
+                  Delete
+                </button>
               </li>
             ))}
           </ul>
         </section>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete workflow “${pendingDelete.name}”?`}
+          confirmLabel="Delete workflow"
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => {
+            setConfirmDelete(null);
+            void ui.run(() => deleteWorkflowCascade(pendingDelete.id), `Deleted “${pendingDelete.name}”.`);
+          }}
+        >
+          <p>
+            {taskCount(pendingDelete) === 1 ? "Its 1 task" : `Its ${taskCount(pendingDelete)} tasks`}, notes, decisions and save points are removed from this browser. This can't be undone; export a
+            backup first if you might need them.
+          </p>
+        </ConfirmDialog>
       )}
 
       <p className="muted small pad">OrionHUD {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>

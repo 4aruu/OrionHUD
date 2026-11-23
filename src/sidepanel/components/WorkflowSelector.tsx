@@ -51,7 +51,7 @@ export function WorkflowSelector({ workflows, meta, now, onOpen, onCreate, onSet
     <div className="selector">
       <div className="selector-head">
         <h2>Workflows</h2>
-        <button className="icon-btn" aria-label="Settings" title="Settings" onClick={onSettings}>
+        <button className="icon-btn" aria-label="Settings" data-tip="Settings" onClick={onSettings}>
           ⚙
         </button>
       </div>
@@ -73,7 +73,7 @@ export function WorkflowSelector({ workflows, meta, now, onOpen, onCreate, onSet
                     {wf.name} {active && <span className="badge-now">active</span>}
                   </span>
                   <span className="bar" aria-hidden="true">
-                    <span style={{ width: `${pct}%` }} />
+                    <span style={{ transform: `scaleX(${pct / 100})` }} />
                   </span>
                   <span className="muted small">
                     {p.done}/{p.total} done{saved ? ` · saved ${formatAgo(now - saved)}` : ""}

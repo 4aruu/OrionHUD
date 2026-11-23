@@ -29,6 +29,10 @@ const TRIGGER_TEXT: Record<string, string> = {
   complete: "when you finished",
 };
 
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
 export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onResume, onFocus }: Props) {
   const latest = task.savePoints[0] ?? null;
   const welcome = shouldShowResume({ latest, lastResumeShownAt: meta.lastResumeShownAt, now });
@@ -40,6 +44,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
   const progress = leafProgress([task]);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [hint, setHint] = useState<string | null>(null);
 
   if (!welcome && !isActive) return null;
 
@@ -53,7 +58,11 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
 
   async function saveNextStep() {
     const step = validateNextStep(draft);
-    if (!step) return;
+    if (!step) {
+      setHint("Type the one thing you'll do next, or press Esc to cancel.");
+      return;
+    }
+    setHint(null);
     await ui.run(() => recordSavePoint(workflow.id, task.id, { trigger: "manual", nextStep: step }), "Next step saved.");
     setEditing(false);
     setDraft("");
@@ -91,10 +100,19 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
               maxLength={280}
               aria-label="Next step"
               placeholder="What will you do first when you're back?"
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+              aria-invalid={hint ? true : undefined}
+              aria-describedby={hint ? "next-step-hint" : undefined}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                setHint(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Escape") return;
+                setEditing(false);
+                setHint(null);
+              }}
             />
-            <button className="btn btn-primary btn-sm" type="submit" disabled={!draft.trim()}>
+            <button className="btn btn-primary btn-sm" type="submit">
               Save
             </button>
           </form>
@@ -109,6 +127,11 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
             {nextStep ?? "Add the one thing to do next"}
           </button>
         )}
+        {editing && hint && (
+          <p id="next-step-hint" className="error" role="alert">
+            {hint}
+          </p>
+        )}
       </div>
 
       <div className="resume-meta">
@@ -118,7 +141,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
           </span>
         )}
         {task.microNotes.some((n) => n.kind === "decision") && (
-          <span>{task.microNotes.filter((n) => n.kind === "decision").length} decisions</span>
+          <span>{plural(task.microNotes.filter((n) => n.kind === "decision").length, "decision")}</span>
         )}
         {aiTabs.length > 0 && <span>{[...new Set(aiTabs.map((t) => t.vendor))].join(", ")} thread{aiTabs.length > 1 ? "s" : ""}</span>}
         {remaining !== null && (
@@ -166,7 +189,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
         </button>
         {welcome && (
           <button className="btn btn-ghost btn-sm" onClick={() => void dismiss()}>
-            Got it
+            Dismiss
           </button>
         )}
       </div>

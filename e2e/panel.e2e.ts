@@ -97,7 +97,7 @@ test("notes, decisions and the inbox", async ({ panel }) => {
   await panel.getByLabel("Inbox item").fill("Look into rate limits");
   await panel.getByLabel("Inbox item").press("Enter");
   await expect(panel.locator(".inbox-list")).toContainText("Look into rate limits");
-  await panel.getByRole("button", { name: "→ Task" }).click();
+  await panel.getByRole("button", { name: "Add as task" }).click();
   await expect(toast(panel)).toContainText("Added as a task.");
   await expect(panel.getByRole("treeitem").filter({ hasText: "Look into rate limits" })).toBeVisible();
 });
@@ -151,8 +151,16 @@ test("backup: export, delete, import brings the workflow back", async ({ panel }
   expect(json).toContain("Payments API v2");
   expect(() => JSON.parse(json)).not.toThrow();
 
-  await panel.getByRole("button", { name: "Delete…" }).click();
-  await panel.getByRole("button", { name: "Delete forever" }).click();
+  // Destructive: a dialog that names the workflow, with Cancel focused.
+  await panel.getByRole("button", { name: "Delete Payments API v2" }).click();
+  const dialog = panel.getByRole("alertdialog", { name: "Delete workflow “Payments API v2”?" });
+  await expect(dialog).toContainText("5 tasks");
+  await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await panel.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Delete Payments API v2" })).toBeFocused();
+  await panel.getByRole("button", { name: "Delete Payments API v2" }).click();
+  await dialog.getByRole("button", { name: "Delete workflow" }).click();
   await expect(toast(panel)).toContainText("Deleted “Payments API v2”.");
   await expect(panel.getByRole("heading", { name: "Delete a workflow" })).toHaveCount(0);
 
@@ -197,4 +205,100 @@ test("the service worker starts clean", async ({ ext }) => {
     return typeof s === "object" && chrome.runtime.getManifest().version;
   });
   expect(ok).toBe("0.3.0");
+});
+
+test("deleting a note, a decision or an inbox item can be undone", async ({ panel }) => {
+  await createWorkflow(panel, "Payments API v2", PLAN);
+  const inspector = panel.getByRole("region", { name: "Details for Auth refactor" });
+  await expect(inspector.getByText("Add a note")).toBeVisible(); // a visible label, not just a placeholder
+  await inspector.getByRole("textbox", { name: "Note" }).fill("npm run test:auth");
+  await inspector.getByRole("textbox", { name: "Note" }).press("Enter");
+  await inspector.getByRole("button", { name: "Delete note" }).click();
+  await expect(inspector).not.toContainText("npm run test:auth");
+  await panel.locator(".toast").getByRole("button", { name: "Undo" }).click();
+  await expect(inspector).toContainText("npm run test:auth");
+
+  await panel.getByRole("button", { name: /Inbox/ }).click();
+  await expect(panel.getByText("Park a side quest")).toBeVisible();
+  await panel.getByLabel("Inbox item").fill("Look into rate limits");
+  await panel.getByLabel("Inbox item").press("Enter");
+  await panel.getByRole("button", { name: "Dismiss inbox item" }).click();
+  await expect(panel.locator(".inbox-list")).toHaveCount(0);
+  await panel.locator(".toast").getByRole("button", { name: "Undo" }).click();
+  await expect(panel.locator(".inbox-list")).toContainText("Look into rate limits");
+});
+
+test("create form: says what's missing instead of a dead button, and keeps a draft", async ({ panel }) => {
+  await panel.getByRole("button", { name: "Create your first workflow" }).click();
+  const create = panel.getByRole("button", { name: "Create workflow" });
+  await expect(create).toBeEnabled();
+  await create.click();
+  await expect(panel.getByRole("alert")).toHaveText("Name the workflow, like “Payments API v2”.");
+  await expect(panel.getByLabel("Workflow name")).toBeFocused();
+  await expect(panel.getByLabel("Workflow name")).toHaveAttribute("aria-invalid", "true");
+  await panel.getByLabel("Workflow name").fill("Half-typed");
+  await expect(panel.getByRole("alert")).toHaveCount(0); // clears on the first keystroke
+
+  const plan = ["Step one", "  Step two"].join("\n");
+  await panel.getByLabel("Plan: one task per line, indent for subtasks").fill(plan);
+  await panel.reload(); // the panel closed by accident
+  await panel.getByRole("button", { name: "Create your first workflow" }).click();
+  await expect(panel.getByLabel("Workflow name")).toHaveValue("Half-typed");
+  await expect(panel.getByLabel("Plan: one task per line, indent for subtasks")).toHaveValue(plan);
+  await panel.getByRole("button", { name: "Create workflow" }).click();
+  await expect(panel.getByRole("heading", { level: 2, name: "Half-typed" })).toBeVisible();
+
+  await panel.getByRole("button", { name: "All workflows" }).click();
+  await panel.getByRole("button", { name: "New workflow" }).click();
+  await expect(panel.getByLabel("Workflow name")).toHaveValue(""); // draft cleared after creating
+});
+
+test("keyboard: the help dialog keeps focus inside and gives it back", async ({ panel }) => {
+  await createWorkflow(panel, "Payments API v2", PLAN);
+  const trigger = panel.getByRole("button", { name: "Keyboard shortcuts" });
+  await trigger.focus();
+  await panel.keyboard.press("Enter");
+  const dialog = panel.getByRole("dialog", { name: "Keyboard shortcuts" });
+  await expect(dialog.getByRole("button", { name: "Close" })).toBeFocused();
+  await panel.keyboard.press("Tab");
+  await expect(dialog.getByRole("button", { name: "Close" })).toBeFocused(); // nowhere else to go inside
+  await panel.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+test("an empty next step explains itself instead of doing nothing", async ({ panel }) => {
+  await createWorkflow(panel, "Payments API v2", PLAN);
+  await workOn(panel, "Docs");
+  const card = resumeCard(panel);
+  await card.getByRole("button", { name: "Add the one thing to do next" }).click();
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(card.getByRole("alert")).toContainText("Type the one thing you'll do next");
+});
+
+test("comfortable sizes: no text under 12px, tap targets of 24px or more, no sideways scroll", async ({ panel }) => {
+  await panel.setViewportSize({ width: 360, height: 800 });
+  await createWorkflow(panel, "Payments API v2", PLAN);
+  await workOn(panel, "Token refresh");
+  const report = await panel.evaluate(() => {
+    const tiny: string[] = [];
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
+      const ownText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent!.trim());
+      if (ownText && el.getBoundingClientRect().width && parseFloat(getComputedStyle(el).fontSize) < 12) tiny.push(el.textContent!.trim().slice(0, 30));
+    }
+    const small: string[] = [];
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("button, a, input, select"))) {
+      // An input inside a <label> is clicked through the whole label.
+      const r = (el.tagName === "INPUT" && el.closest("label") ? el.closest("label")! : el).getBoundingClientRect();
+      if (!r.width) continue;
+      // Checkboxes and chevrons draw small but click through a 24px ::after.
+      const after = getComputedStyle(el, "::after");
+      const grow = after.content !== "none" && after.position === "absolute" ? -2 * parseFloat(after.top || "0") : 0;
+      if (r.width + grow < 24 || r.height + grow < 24) small.push(`${el.getAttribute("aria-label") ?? el.textContent?.trim()} ${Math.round(r.width)}x${Math.round(r.height)}`);
+    }
+    return { tiny, small, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  });
+  expect(report.tiny).toEqual([]);
+  expect(report.small).toEqual([]);
+  expect(report.overflow).toBe(0);
 });

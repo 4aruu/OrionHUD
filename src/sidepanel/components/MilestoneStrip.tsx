@@ -17,7 +17,7 @@ export function MilestoneStrip({ roots, onFocus }: { roots: ITaskNode[]; onFocus
           <button key={m.id} className={`milestone ${pct === 100 ? "milestone-done" : ""}`} onClick={() => onFocus(m.id)}>
             <span className="milestone-title">⚑ {m.title}</span>
             <span className="bar" aria-hidden="true">
-              <span style={{ width: `${pct}%` }} />
+              <span style={{ transform: `scaleX(${pct / 100})` }} />
             </span>
             <span className="milestone-count">
               {p.done}/{p.total}

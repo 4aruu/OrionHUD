@@ -88,7 +88,7 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
   return (
     <div className="workflow">
       <header className="wf-head">
-        <button className="icon-btn" aria-label="All workflows" onClick={onBack}>
+        <button className="icon-btn" aria-label="All workflows" data-tip="All workflows" data-tip-align="start" onClick={onBack}>
           ←
         </button>
         <div className="wf-title">
@@ -102,14 +102,14 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
             Pause
           </button>
         ) : null}
-        <button className="icon-btn" aria-label="Keyboard shortcuts" title="Shortcuts (?)" onClick={() => setHelp(true)}>
+        <button className="icon-btn" aria-label="Keyboard shortcuts" data-tip="Keyboard shortcuts (?)" onClick={() => setHelp(true)}>
           ?
         </button>
       </header>
 
       <div className="wf-progress" aria-label={`${progress.done} of ${progress.total} tasks done`}>
         <span className="bar">
-          <span style={{ width: `${pct}%` }} />
+          <span style={{ transform: `scaleX(${pct / 100})` }} />
         </span>
         <span className="muted small">
           {progress.done}/{progress.total}

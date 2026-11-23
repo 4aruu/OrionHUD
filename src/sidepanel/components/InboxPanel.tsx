@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { IWorkflowState } from "../../shared/types";
-import { addInboxItem, dismissInboxItem, promoteInboxItem } from "../../shared/workflowActions";
+import { addInboxItem, dismissInboxItem, promoteInboxItem, restoreInboxItem } from "../../shared/workflowActions";
 import { findTaskNode } from "../../shared/taskTree";
 import type { Ui } from "../lib/ui";
 import { formatAgo } from "../lib/format";
@@ -17,6 +17,13 @@ export function InboxPanel({ workflow, focusedId, activeId, now, ui }: Props) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(workflow.inbox.length > 0);
   const target = focusedId ? findTaskNode(workflow.rootNodes, focusedId) : undefined;
+  const inputId = useId();
+
+  async function dismiss(itemId: string) {
+    const removed = await ui.run(() => dismissInboxItem(workflow.id, itemId));
+    if (!removed) return;
+    ui.toast({ kind: "info", text: "Inbox item dismissed.", action: { label: "Undo", run: () => void ui.run(() => restoreInboxItem(workflow.id, removed)) } });
+  }
 
   return (
     <section className="inbox">
@@ -37,7 +44,17 @@ export function InboxPanel({ workflow, focusedId, activeId, now, ui }: Props) {
               void ui.run(() => addInboxItem(workflow.id, v, activeId)).then((r) => r && setText(""));
             }}
           >
-            <input value={text} maxLength={500} placeholder="Park a side quest without losing focus" aria-label="Inbox item" onChange={(e) => setText(e.target.value)} />
+            <label className="field-label" htmlFor={inputId}>
+              Park a side quest
+            </label>
+            <input
+              id={inputId}
+              value={text}
+              maxLength={500}
+              placeholder="Check rate limits on /token. Enter to save"
+              aria-label="Inbox item"
+              onChange={(e) => setText(e.target.value)}
+            />
           </form>
           {workflow.inbox.length === 0 ? (
             <p className="muted small pad">Nothing parked. Thoughts that pop up mid-task land here.</p>
@@ -60,13 +77,13 @@ export function InboxPanel({ workflow, focusedId, activeId, now, ui }: Props) {
                         title={`Add under “${target.title}”`}
                         onClick={() => void ui.run(() => promoteInboxItem(workflow.id, item.id, target.id), `Added under “${target.title}”.`)}
                       >
-                        → Subtask
+                        Add as subtask
                       </button>
                     )}
                     <button className="btn btn-ghost btn-xs" onClick={() => void ui.run(() => promoteInboxItem(workflow.id, item.id, null), "Added as a task.")}>
-                      → Task
+                      Add as task
                     </button>
-                    <button className="icon-btn" aria-label="Dismiss inbox item" onClick={() => void ui.run(() => dismissInboxItem(workflow.id, item.id))}>
+                    <button className="icon-btn" aria-label="Dismiss inbox item" data-tip="Dismiss" onClick={() => void dismiss(item.id)}>
                       ×
                     </button>
                   </div>

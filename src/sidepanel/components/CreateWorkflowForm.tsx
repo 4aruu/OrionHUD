@@ -1,9 +1,41 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { addOutline, createWorkflow } from "../../shared/workflowActions";
 import { parseOutline, countOutline } from "../../shared/outline";
 import { LIMITS, validateDomain, validateWorkflowName } from "../../shared/validators";
 import { CATEGORY_DISTRACTIONS, JOB_CATEGORIES, type CategoryId } from "../lib/categories";
 import type { Ui } from "../lib/ui";
+
+// What you've typed survives closing the panel mid-form; cleared on create or Cancel.
+const DRAFT_KEY = "orion.newWorkflowDraft";
+interface Draft {
+  name: string;
+  category: CategoryId;
+  plan: string;
+}
+
+function readDraft(): Draft | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null") as Partial<Draft> | null;
+    if (!raw || typeof raw !== "object") return null;
+    const category = JOB_CATEGORIES.some((c) => c.id === raw.category) ? (raw.category as CategoryId) : "software";
+    return {
+      name: typeof raw.name === "string" ? raw.name.slice(0, LIMITS.workflowName) : "",
+      category,
+      plan: typeof raw.plan === "string" ? raw.plan.slice(0, 20_000) : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(d: Draft | null): void {
+  try {
+    if (!d || (!d.name && !d.plan)) localStorage.removeItem(DRAFT_KEY);
+    else localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  } catch {
+    /* storage unavailable: the form still works, it just won't survive a close */
+  }
+}
 
 interface Props {
   ui: Ui;
@@ -12,17 +44,24 @@ interface Props {
 }
 
 export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<CategoryId>("software");
-  const [plan, setPlan] = useState("");
+  const [initial] = useState(readDraft);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [category, setCategory] = useState<CategoryId>(initial?.category ?? "software");
+  const [plan, setPlan] = useState(initial?.plan ?? "");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameTouched, setNameTouched] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
   const [guardOpen, setGuardOpen] = useState(false);
   const [grace, setGrace] = useState(5);
-  const [domains, setDomains] = useState<string[]>(CATEGORY_DISTRACTIONS.software);
+  const [domains, setDomains] = useState<string[]>(CATEGORY_DISTRACTIONS[initial?.category ?? "software"]);
   const [domainInput, setDomainInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => writeDraft({ name, category, plan }), [name, category, plan]);
+
   const items = parseOutline(plan);
+  const NAME_HINT = "Name the workflow, like “Payments API v2”.";
   const count = countOutline(items);
 
   function addDomain() {
@@ -38,8 +77,10 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
   }
 
   async function submit() {
+    if (busy) return;
     if (!validateWorkflowName(name)) {
-      setError("Give it a name, like “Payments API v2”.");
+      setNameError(NAME_HINT);
+      nameRef.current?.focus();
       return;
     }
     setBusy(true);
@@ -49,7 +90,10 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
       return wf.id;
     });
     setBusy(false);
-    if (id) onCreated(id);
+    if (id) {
+      writeDraft(null);
+      onCreated(id);
+    }
   }
 
   return (
@@ -61,7 +105,17 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
       }}
     >
       <header className="wf-head">
-        <button type="button" className="icon-btn" aria-label="Cancel" onClick={onCancel}>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="Cancel"
+          data-tip="Cancel"
+          data-tip-align="start"
+          onClick={() => {
+            writeDraft(null);
+            onCancel();
+          }}
+        >
           ←
         </button>
         <div className="wf-title">
@@ -71,7 +125,30 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
 
       <label className="field">
         <span>Name</span>
-        <input autoFocus aria-label="Workflow name" value={name} maxLength={LIMITS.workflowName} placeholder="Payments API v2" onChange={(e) => setName(e.target.value)} />
+        <input
+          ref={nameRef}
+          autoFocus
+          aria-label="Workflow name"
+          value={name}
+          maxLength={LIMITS.workflowName}
+          placeholder="Payments API v2"
+          aria-invalid={nameError ? true : undefined}
+          aria-describedby={nameError ? "wf-name-error" : undefined}
+          onChange={(e) => {
+            setName(e.target.value);
+            setNameTouched(true);
+            setNameError(null);
+          }}
+          onBlur={() => {
+            // Validate on leaving, but not a field nobody has typed in yet.
+            if (nameTouched && !validateWorkflowName(name)) setNameError(NAME_HINT);
+          }}
+        />
+        {nameError && (
+          <span id="wf-name-error" className="error" role="alert">
+            {nameError}
+          </span>
+        )}
       </label>
 
       <fieldset className="field">
@@ -167,7 +244,7 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
         </p>
       )}
 
-      <button className="btn btn-primary btn-full" type="submit" disabled={busy || !name.trim()}>
+      <button className="btn btn-primary btn-full" type="submit" aria-busy={busy}>
         {busy ? "Creating…" : "Create workflow"}
       </button>
     </form>

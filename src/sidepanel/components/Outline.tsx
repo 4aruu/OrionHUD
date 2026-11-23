@@ -375,7 +375,7 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                       className="icon-btn"
                       tabIndex={-1}
                       aria-label={`Work on ${node.title}`}
-                      title="Work on this (.)"
+                      data-tip="Work on this (.)"
                       onClick={(e) => {
                         e.stopPropagation();
                         onSwitch(node.id);
@@ -388,7 +388,7 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                     className="icon-btn"
                     tabIndex={-1}
                     aria-label={`Add subtask to ${node.title}`}
-                    title="Add subtask (Shift+Enter)"
+                    data-tip="Add subtask (Shift+Enter)"
                     onClick={(e) => {
                       e.stopPropagation();
                       setFocusedId(node.id);
