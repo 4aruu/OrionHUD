@@ -1,0 +1,29 @@
+{
+  "name": "orion-hud",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Context-aware workflow HUD browser extension.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crxjs/vite-plugin": "^2.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "idb": "^8.0.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.4"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.2.2",
+    "fake-indexeddb": "^6.2.5",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
