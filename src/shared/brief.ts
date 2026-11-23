@@ -2,7 +2,8 @@
 // agent so it starts where you left off. Deliberately itemized (decisions as
 // a list, not a rewritten summary) and bounded in size.
 //
-// This text format is also the contract the v2 agent bridge will serve.
+// This text format is also the contract the agent bridge serves
+// (get_current_task returns exactly this).
 
 import type { ITaskNode, IWorkflowState } from "./types";
 import { findPath, findTaskNode, leafProgress } from "./taskTree";
@@ -15,7 +16,7 @@ const MAX_LINKS = 10;
 
 // Keeps user text from breaking the Markdown structure (a title starting
 // with "#" or a newline inside a note would otherwise inject headings).
-function inline(text: string): string {
+export function inline(text: string): string {
   return text.replace(/[\r\n]+/g, " ").replace(/^#+\s*/, "").trim();
 }
 

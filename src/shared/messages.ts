@@ -6,13 +6,14 @@ import { LIMITS } from "./validators";
 
 export type CaptureMode = "save" | "inbox";
 
-export type StateChangeReason = "idle" | "active" | "capture" | "menu" | "command" | "alarm";
+export type StateChangeReason = "idle" | "active" | "capture" | "menu" | "command" | "alarm" | "bridge";
 
 export type ExtensionMessage =
   | { type: "ORION_STATE_CHANGED"; reason: StateChangeReason }
-  | { type: "ORION_CAPTURE_SUBMIT"; mode: CaptureMode; text: string };
+  | { type: "ORION_CAPTURE_SUBMIT"; mode: CaptureMode; text: string }
+  | { type: "ORION_BRIDGE_CONNECT" };
 
-const REASONS: StateChangeReason[] = ["idle", "active", "capture", "menu", "command", "alarm"];
+const REASONS: StateChangeReason[] = ["idle", "active", "capture", "menu", "command", "alarm", "bridge"];
 
 export function parseExtensionMessage(raw: unknown): ExtensionMessage | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -33,6 +34,8 @@ export function parseExtensionMessage(raw: unknown): ExtensionMessage | null {
       if (mode === "inbox" && text.trim().length === 0) return null;
       return { type: "ORION_CAPTURE_SUBMIT", mode, text };
     }
+    case "ORION_BRIDGE_CONNECT":
+      return Object.keys(msg).length === 1 ? { type: "ORION_BRIDGE_CONNECT" } : null;
     default:
       return null;
   }

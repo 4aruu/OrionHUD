@@ -16,6 +16,7 @@ Why it exists, and how it differs from tab managers, AI-memory plugins and agent
 | **Inbox** | `Alt+Shift+Q` on any page parks a side quest without leaving your task. Triage later into a task or subtask. |
 | **Handoff brief** | `c` (or Copy brief) puts a compact Markdown context block on your clipboard: path, milestone, progress, next step, decisions, open subtasks, links. Paste it into Claude, ChatGPT, Cursor, anything. |
 | **Timebox & distraction guard** | Optional per task timer; optional nudge after a grace period on sites you list. |
+| **Agent bridge** (optional) | Claude Code, Cursor or any MCP client can read your current task's brief, add and check off its subtasks, and log decisions. Changes show up in the panel immediately. See [Agent bridge](#agent-bridge-claude-code-cursor). |
 | **Backup** | Export/import everything as JSON (Settings). |
 
 ### Keyboard (task list focused)
@@ -33,6 +34,39 @@ Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacke
 
 Optional: Settings → **Turn on tab memory** to let save points remember tabs (see Permissions).
 
+## Agent bridge (Claude Code, Cursor)
+
+A small local helper (`bridge/`, Node 18+, no dependencies) that gives coding agents five tools: `get_current_task` (the handoff brief), `list_open_subtasks`, `add_subtask`, `complete_task`, `log_decision`. Agents can only touch the task you're working on and its subtasks, and can't delete anything. Nothing leaves your computer except what the agent sends its model, same as a pasted brief.
+
+Setup, once:
+
+1. Build: `npm install` then `npm run build` (this also builds `bridge/dist/orion-bridge.mjs`). Reload the extension on `chrome://extensions`.
+2. In the side panel: **Settings → Agent bridge → Turn on agent bridge**. Chrome asks to "Communicate with cooperating native applications".
+3. Click **Copy install command** and run it in a terminal in the OrionHUD folder. It looks like this, with your extension's ID:
+
+   ```powershell
+   npx --yes --package=./bridge orionhud-bridge install --extension-id abcdefghijklmnopabcdefghijklmnop
+   ```
+
+   It copies the bridge to a per-user folder (`%LOCALAPPDATA%\OrionHUD\bridge`, `~/Library/Application Support/OrionHUD/bridge`, or `~/.local/share/orionhud/bridge`), registers it with Chrome for that one extension ID (Windows: a key under `HKCU\Software\Google\Chrome\NativeMessagingHosts`; macOS/Linux: a JSON file in Chrome's `NativeMessagingHosts` folder), and prints the exact command for the next step.
+4. Back in Settings, click **Check again**. It should say **Connected**.
+5. Add it to your agent with the line the installer printed, for example:
+
+   ```powershell
+   claude mcp add --scope user orionhud -- "C:\Program Files\nodejs\node.exe" C:\Users\you\AppData\Local\OrionHUD\bridge\orion-bridge.mjs mcp
+   ```
+
+   Cursor: add the printed `mcpServers.orionhud` entry to `~/.cursor/mcp.json`.
+
+Other commands: `npx --package=./bridge orionhud-bridge status` (what's installed, is Chrome connected) and `… uninstall` (removes the files and the registration; then `claude mcp remove orionhud`).
+
+Notes:
+
+- An unpacked extension's ID depends on the folder you loaded it from. If you move `dist/`, Settings says the bridge is installed for a different extension ID: run the install command again.
+- While the bridge is on, Chrome keeps OrionHUD's background worker running so it can answer. Turn the bridge off in Settings to stop it.
+- Don't run `npx orionhud-bridge` from the npm registry: this project hasn't published that name. Always use `--package=./bridge`.
+- Security design: [docs/bridge-threat-model.md](docs/bridge-threat-model.md).
+
 ## Permissions, and why
 
 | Permission | Why | Install warning |
@@ -46,8 +80,9 @@ Optional: Settings → **Turn on tab memory** to let save points remember tabs (
 | `notifications` | Time's up, confirmations | none |
 | `tabGroups` | Reopen a task's tabs as one named group | none |
 | `tabs` (**optional**, asked when you turn on tab memory) | Read tab URLs/titles for save points and the distraction guard | "Read your browsing history" |
+| `nativeMessaging` (**optional**, asked when you turn on the agent bridge) | Talk to the local bridge helper you installed | "Communicate with cooperating native applications" |
 
-No host permissions. No content scripts injected automatically. No network requests: no analytics, no remote fonts, no servers. See [PRIVACY.md](PRIVACY.md).
+No host permissions. No content scripts injected automatically. No network requests: no analytics, no remote fonts, no servers. The agent bridge is local only: a per-user socket on this computer. See [PRIVACY.md](PRIVACY.md).
 
 ## Architecture
 
@@ -61,12 +96,22 @@ src/shared/      pure logic + storage (no chrome.* except alarms.ts)
   brief.ts         handoff brief (Markdown)
   outline.ts       paste-an-outline parser
   workflowActions.ts  use-cases; validates every user string
+  bridgeProtocol.ts   agent bridge wire format + parsers (shared with bridge/)
+  bridgeService.ts    runs bridge requests, scoped to the active task
 src/platform/tabs.ts   chrome.tabs/tabGroups capture + restore
+src/platform/bridge.ts nativeMessaging permission + bridge status (storage.session)
 src/background/  service worker: listeners only, no in-memory state
 src/content/capture.ts  on-demand capture box (closed shadow DOM, no innerHTML)
 src/sidepanel/   React UI (components/, hooks/, lib/)
 dev/             harness: the real panel in a normal tab with a chrome.* shim
+bridge/          agent bridge (Node): MCP server + native-messaging host + installer
+  src/framing.ts   4-byte length-prefixed JSON frames
+  src/mcp.ts       stdio MCP server (JSON-RPC); the 5 tools are in tools.ts
+  src/host.ts      native host: socket ⇄ Chrome relay, token auth
+  src/install.ts   host manifest, launcher, registry
 ```
+
+The agent bridge path: agent → `orion-bridge mcp` (stdio) → local socket with a per-session token → `orion-bridge native-host` (started by Chrome) → service worker → `workflowActions` → IndexedDB. The extension stays the only writer. Design: [docs/superpowers/specs/2026-11-23-agent-bridge-design.md](docs/superpowers/specs/2026-11-23-agent-bridge-design.md).
 
 Reliability decisions worth knowing:
 
@@ -101,9 +146,28 @@ npm run harness
 11. Export backup, delete the workflow, import the backup; everything returns (tasks come back paused).
 12. Quit Chrome with tab memory on, restart: "browser restarted" save point with tabs.
 
+### Agent bridge checklist (real Chrome + Claude Code)
+
+1. Fresh build loaded; Settings → Agent bridge shows **Turn on agent bridge** only. Service worker console is clean.
+2. Turn it on, accept Chrome's prompt. Status reads "Bridge not installed yet" and shows the install command with this extension's ID.
+3. Run the copied command in the repo folder. It prints the manifest path and a `claude mcp add …` line. Click **Check again** → **Connected · bridge 0.3.0**.
+4. `npx --package=./bridge orionhud-bridge status` → "Chrome is connected (host running)".
+5. Run the printed `claude mcp add …` line. In a new Claude Code session, `/mcp` lists **orionhud** as connected with 5 tools.
+6. In the panel, create a task with two subtasks and start it (`.`). Ask Claude Code: "Use OrionHUD to get my current task." It calls `get_current_task`; the text matches **Copy brief**.
+7. Ask: "List my open subtasks, then complete the first one." It calls `list_open_subtasks` then `complete_task`. **With the side panel open, the subtask shows as done within a second, without reloading**, and progress rolls up.
+8. Ask it to "log a decision: use exponential backoff". It appears under Decisions on the task.
+9. Ask it to add a subtask. It appears under the current task.
+10. Ask it to complete a task in a different branch (give it that task's title). It gets a scope error; that task is unchanged.
+11. Ask it to complete the parent while a child is still open: "still open" error; nothing changes.
+12. Pause the workflow in the panel. `get_current_task` now says no task is active.
+13. Quit Chrome. The next tool call says OrionHUD isn't reachable, without hanging. Reopen Chrome: Settings shows Connected again by itself, and tools work.
+14. Reload the extension on `chrome://extensions`; tools keep working without restarting Claude Code.
+15. Settings → **Turn off agent bridge**: status off, tools report unreachable, `status` says Chrome isn't connected.
+16. `… orionhud-bridge uninstall`: the manifest/registry key and the per-user folder are gone; turning the bridge back on shows "not installed".
+
 ## Roadmap
 
-- **v0.3: agent bridge.** A small `npx` companion (MCP server + native messaging) so Claude Code / Cursor can read the current task and brief, check off subtasks, and log decisions in the same tree. The brief format in `brief.ts` is its contract.
+- **v0.3: agent bridge.** Shipped; see [Agent bridge](#agent-bridge-claude-code-cursor). Next: publish `orionhud-bridge` to npm under the project's account so `npx orionhud-bridge` works without the repo.
 - On-device summaries of long AI threads via Chrome's Summarizer API where hardware allows.
 - Chrome Web Store listing (privacy policy is ready in `PRIVACY.md`).
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OrionHUD",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Pick up exactly where you left off: milestones, nested subtasks, AI threads and tabs, saved automatically when you get interrupted.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -16,7 +16,7 @@
     "contextMenus",
     "tabGroups"
   ],
-  "optional_permissions": ["tabs"],
+  "optional_permissions": ["tabs", "nativeMessaging"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },

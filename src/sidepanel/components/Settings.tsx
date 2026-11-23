@@ -3,6 +3,7 @@ import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
 import type { Ui } from "../lib/ui";
+import { BridgeSettings } from "./BridgeSettings";
 
 interface Props {
   workflows: IWorkflowState[];
@@ -73,6 +74,8 @@ export function Settings({ workflows, ui, onBack }: Props) {
           {tabsOn ? "Turn off tab memory" : "Turn on tab memory"}
         </button>
       </section>
+
+      <BridgeSettings ui={ui} />
 
       <section className="card">
         <h3>Shortcuts</h3>

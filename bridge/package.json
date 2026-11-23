@@ -1,0 +1,16 @@
+{
+  "name": "orionhud-bridge",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Lets coding agents (Claude Code, Cursor) read and update your OrionHUD task tree: a stdio MCP server plus a Chrome native-messaging host.",
+  "type": "module",
+  "bin": {
+    "orionhud-bridge": "dist/orion-bridge.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

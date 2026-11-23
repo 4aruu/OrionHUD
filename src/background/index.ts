@@ -15,9 +15,16 @@ import {
   refreshLiveTabs,
 } from "./idle";
 import { broadcast } from "./notify";
+import { BRIDGE_RETRY_ALARM, connectBridge, disconnectBridge } from "./bridge";
+import { isBridgePermission } from "../platform/bridge";
+import { isOwnSender, parseExtensionMessage } from "../shared/messages";
 
 void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => undefined);
 chrome.idle.setDetectionInterval(IDLE_THRESHOLD_SECONDS);
+
+// Agent bridge (opt-in). Every worker start reconnects if the permission is
+// granted; with the host missing this fails fast and records "not installed".
+void connectBridge();
 
 chrome.runtime.onInstalled.addListener(() => {
   createMenus();
@@ -34,12 +41,29 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     void refreshLiveTabs();
     return;
   }
+  if (alarm.name === BRIDGE_RETRY_ALARM) {
+    void connectBridge();
+    return;
+  }
   void handleTaskAlarm(alarm).then(() => broadcast("alarm"));
 });
 
 chrome.commands.onCommand.addListener((command, tab) => onCommand(command, tab));
 chrome.contextMenus.onClicked.addListener((info) => onMenuClicked(info));
-chrome.runtime.onMessage.addListener((raw, sender, respond) => onRuntimeMessage(raw, sender, respond));
+chrome.runtime.onMessage.addListener((raw, sender, respond) => {
+  // Settings → Agent bridge → "Check again". Only from our own pages.
+  if (isOwnSender(sender, chrome.runtime.id) && !sender.tab && parseExtensionMessage(raw)?.type === "ORION_BRIDGE_CONNECT") {
+    void connectBridge().then(() => respond({ ok: true }));
+    return true;
+  }
+  return onRuntimeMessage(raw, sender, respond);
+});
+chrome.permissions.onAdded.addListener((perms) => {
+  if (isBridgePermission(perms)) void connectBridge();
+});
+chrome.permissions.onRemoved.addListener((perms) => {
+  if (isBridgePermission(perms)) void disconnectBridge();
+});
 chrome.idle.onStateChanged.addListener((state) => void onIdleStateChanged(state));
 
 chrome.tabs.onActivated.addListener(({ tabId }) => {
