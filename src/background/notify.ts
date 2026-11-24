@@ -1,4 +1,4 @@
-import { APP_NAME } from "../shared/brand";
+import { APP_NAME, NOTIFICATION_ICON } from "../shared/brand";
 import type { ExtensionMessage, StateChangeReason } from "../shared/messages";
 
 /** Tells any open side panel to reload from storage. Safe if none is open. */
@@ -13,7 +13,7 @@ export async function notify(id: string, title: string, message: string): Promis
   try {
     await chrome.notifications.create(id, {
       type: "basic",
-      iconUrl: chrome.runtime.getURL("icons/icon128.png"),
+      iconUrl: chrome.runtime.getURL(NOTIFICATION_ICON),
       title,
       message: message.slice(0, 300),
     });

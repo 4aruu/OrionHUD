@@ -1,4 +1,4 @@
-// Dev-only: renders icons/src/*.svg to icons/icon<px>.png.
+// Dev-only: renders icons/src/*.svg to the PNGs under icons/.
 //   npm run icons        write the PNGs
 //   npm run icons:check  render in memory and fail if a committed PNG is stale (writes nothing)
 import { readFileSync, writeFileSync } from "node:fs";
@@ -7,11 +7,15 @@ import { Resvg } from "@resvg/resvg-js";
 import { decodeRgba } from "./png-decode.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
+// `padded`: the store icon keeps its 16px transparent border. `viewBox`: crop the source before
+// rendering; notify96 is the 128 art's 96x96 artwork without the padding, so Chrome
+// notifications show it full size.
 const jobs = [
-  { src: "icon-128.svg", px: 128 },
-  { src: "icon-128.svg", px: 48 },
-  { src: "icon-32.svg", px: 32 },
-  { src: "icon-16.svg", px: 16 },
+  { src: "icon-128.svg", px: 128, out: "icons/icon128.png", padded: true },
+  { src: "icon-128.svg", px: 48, out: "icons/icon48.png" },
+  { src: "icon-32.svg", px: 32, out: "icons/icon32.png" },
+  { src: "icon-16.svg", px: 16, out: "icons/icon16.png" },
+  { src: "icon-128.svg", px: 96, out: "icons/notify96.png", viewBox: "16 16 96 96" },
 ];
 
 // Renders are compared with a ±2 tolerance: a committed icon is stale if its size differs or any
@@ -20,20 +24,29 @@ const jobs = [
 // (@resvg/resvg-js 2.6.2); after an upgrade, `npm run icons` is the fix.
 const TOLERANCE = 2;
 
-/** Render one job and apply the dimension and 128px padding assertions. Returns the resvg render. */
-function renderAndAssert({ src, px }) {
+/** Read a job's SVG, applying its viewBox crop if it has one. */
+function readSvg({ src, viewBox }) {
   const svg = readFileSync(`${root}icons/src/${src}`, "utf8");
-  const rendered = new Resvg(svg, { fitTo: { mode: "width", value: px } }).render();
+  if (!viewBox) return svg;
+  const tag = /<svg\b[^>]*>/.exec(svg);
+  if (!tag || !/\sviewBox="[^"]*"/.test(tag[0])) throw new Error(`${src}: root <svg> has no viewBox to crop`);
+  return svg.replace(tag[0], tag[0].replace(/\sviewBox="[^"]*"/, ` viewBox="${viewBox}"`));
+}
+
+/** Render one job and apply the dimension and (padded jobs only) padding assertions. Returns the resvg render. */
+function renderAndAssert(job) {
+  const { src, px, out, padded } = job;
+  const rendered = new Resvg(readSvg(job), { fitTo: { mode: "width", value: px } }).render();
   if (rendered.width !== px || rendered.height !== px) {
-    throw new Error(`${src} rendered ${rendered.width}x${rendered.height}, expected ${px}x${px}`);
+    throw new Error(`${out} from ${src} rendered ${rendered.width}x${rendered.height}, expected ${px}x${px}`);
   }
-  if (px === 128) {
+  if (padded) {
     const data = rendered.pixels; // RGBA
     let count = 0;
     let first = null;
     for (let y = 0; y < px; y++) {
       for (let x = 0; x < px; x++) {
-        if ((x < 16 || x >= 112 || y < 16 || y >= 112) && data[(y * px + x) * 4 + 3] !== 0) {
+        if ((x < 16 || x >= px - 16 || y < 16 || y >= px - 16) && data[(y * px + x) * 4 + 3] !== 0) {
           count++;
           first ??= [x, y];
         }
@@ -41,7 +54,7 @@ function renderAndAssert({ src, px }) {
     }
     if (count > 0) {
       throw new Error(
-        `icon128: ${count} non-transparent pixel(s) in the 16px padding, first at (${first[0]}, ${first[1]})`,
+        `${out}: ${count} non-transparent pixel(s) in the 16px padding, first at (${first[0]}, ${first[1]})`,
       );
     }
   }
@@ -74,7 +87,7 @@ const problems = [];
 
 for (const job of jobs) {
   const rendered = renderAndAssert(job);
-  const out = `icons/icon${job.px}.png`;
+  const { out } = job;
   if (check) {
     let committed;
     try {
@@ -96,7 +109,7 @@ for (const job of jobs) {
     if (!matches(decoded, rendered)) problems.push(`${out} is stale — run npm run icons`);
   } else {
     writeFileSync(`${root}${out}`, rendered.asPng());
-    console.log(`wrote ${out} (${job.px}x${job.px}) from ${job.src}`);
+    console.log(`wrote ${out} (${job.px}x${job.px}) from ${job.src}${job.viewBox ? ` cropped to ${job.viewBox}` : ""}`);
   }
 }
 if (check) {

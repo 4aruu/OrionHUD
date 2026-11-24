@@ -89,7 +89,7 @@ npm run harness
 npm run icons
 ```
 
-`npm run icons` regenerates `icons/*.png` from `icons/src/*.svg`.
+`npm run icons` regenerates `icons/*.png` from `icons/src/*.svg`: the toolbar and store icons (16/32/48/128) and the notification icon `notify96.png` (the 128 art cropped to its 96×96 artwork, so notifications show it full size).
 
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 
