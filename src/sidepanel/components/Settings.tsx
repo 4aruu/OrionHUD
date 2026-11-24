@@ -3,6 +3,7 @@ import { APP_NAME } from "../../shared/brand";
 import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
+import { backupFileName } from "../lib/format";
 import type { Ui } from "../lib/ui";
 
 interface Props {
@@ -38,7 +39,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
     const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `orionhud-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = backupFileName(new Date());
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
