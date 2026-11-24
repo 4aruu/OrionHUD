@@ -137,6 +137,8 @@ npm run harness
 
   What the bridge test touches: bridge files go to a temporary folder, but on Windows Chrome only looks in the registry, so the test writes `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.orionhud.bridge`. Any existing value is saved first and restored afterwards. The extension copy used by this test has `nativeMessaging` granted up front, because automation can't click Chrome's permission prompt. That prompt is the one step still covered only by the manual checklist below.
 
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm run typecheck`, `npm test` and `npm run build` on Node 22 for every pull request and every push to `main`, then checks that `dist/manifest.json` exists and that `dist/capture.js` is a self-contained script with no `import`.
+
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 
 ## Manual QA checklist (real Chrome, before a release)
