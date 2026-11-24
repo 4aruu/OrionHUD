@@ -42,24 +42,30 @@ function renderAndAssert({ src, px }) {
 }
 
 const check = process.argv.includes("--check");
+const problems = [];
 
 for (const job of jobs) {
   const png = renderAndAssert(job);
   const out = `icons/icon${job.px}.png`;
   if (check) {
-    let committed = null;
+    let committed;
     try {
       committed = readFileSync(`${root}${out}`);
-    } catch {
-      // missing file counts as stale
+    } catch (err) {
+      if (err?.code !== "ENOENT") throw err;
     }
-    if (!committed || !png.equals(committed)) {
-      console.error(`${out} is stale — run npm run icons`);
-      process.exit(1);
-    }
+    // Renders are byte-compared, so @resvg/resvg-js is pinned; after an upgrade, `npm run icons` is the fix.
+    if (!committed) problems.push(`${out} is missing — run npm run icons`);
+    else if (!png.equals(committed)) problems.push(`${out} is stale — run npm run icons`);
   } else {
     writeFileSync(`${root}${out}`, png);
     console.log(`wrote ${out} (${job.px}x${job.px}) from ${job.src}`);
   }
 }
-if (check) console.log(`icons: ${jobs.length} up to date`);
+if (check) {
+  if (problems.length > 0) {
+    for (const line of problems) console.error(line);
+    process.exit(1);
+  }
+  console.log(`icons: ${jobs.length} up to date`);
+}
