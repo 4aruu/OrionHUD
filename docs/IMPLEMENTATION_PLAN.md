@@ -30,6 +30,7 @@ These depend on Chrome itself and can't run in Node or the dev harness; see the 
   - Chrome, Edge, Brave, Opera: the click opens the side panel, and not also a window.
   - Arc: the click opens one window at the right edge; Reopen tabs lands in the browser window, not the Orion window.
   - Vivaldi: note whether the side panel opens; the window must always work.
+  - Every browser: Settings → Change shortcuts opens that browser's shortcut page; the tab-memory prompt wording matches what the browser shows.
   - Window mode: a time's-up notification does not claim you drifted just because the Orion window had focus.
 
 ## Before the Web Store submission

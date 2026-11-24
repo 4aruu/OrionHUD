@@ -39,16 +39,16 @@ Optional: Settings → **Turn on tab memory** to let save points remember tabs (
 
 ## Supported browsers
 
-One build for every Chromium browser, installed from the Chrome Web Store. Where a browser has no side panel, the same panel opens as a small window beside your browser window.
+One build for every Chromium browser, built for the Chrome Web Store (listing in progress), which Edge, Brave, Opera, Vivaldi and Arc can all install from. Where a browser has no side panel, the same panel opens as a small window beside your browser window. Rows marked † describe expected behaviour that is checked by hand on that browser before each release (see `docs/IMPLEMENTATION_PLAN.md`).
 
 | Browser | Opens as | Notes |
 |---|---|---|
 | Chrome 116+ | Side panel | |
-| Microsoft Edge | Side panel (Edge sidebar) | |
-| Brave | Side panel | |
-| Opera | Side panel | If the panel doesn't appear, use the window (below). |
-| Vivaldi | Side panel or window | Vivaldi's side panel support is partial; the window always works. |
-| Arc | Window | Arc has no side panel API. |
+| Microsoft Edge † | Side panel (Edge sidebar) | |
+| Brave † | Side panel | |
+| Opera † | Side panel, or window | Install Opera's "Install Chrome Extensions" add-on first. If the panel doesn't appear, use the window (below). |
+| Vivaldi † | Side panel or window | Vivaldi's side panel support is partial; the window always works. |
+| Arc † | Window | Arc has no side panel API. |
 | Firefox, Safari | Not supported yet | Firefox needs its own build (`sidebar_action`); planned after launch. |
 
 Open the window anywhere with `Alt+Shift+O`, or right-click the toolbar icon → **Open in its own window**. Features a browser lacks switch off on their own (no idle detection → no auto save point when you step away); the rest keeps working.
