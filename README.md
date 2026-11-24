@@ -4,7 +4,7 @@
 
 Got pulled away? Pick up exactly where you left off.
 
-**Pick up exactly where you left off.** A Chrome side-panel extension for developers who build with several AIs at once: your milestones and nested subtasks, the tabs and AI threads behind each one, and a handoff brief any AI or agent can pick up. All saved automatically when you get interrupted, all kept on your machine.
+A Chrome side-panel extension for developers who build with several AIs at once: your milestones and nested subtasks, the tabs and AI threads behind each one, and a handoff brief any AI or agent can pick up. All saved automatically when you get interrupted, all kept on your machine.
 
 Why it exists, and how it differs from tab managers, AI-memory plugins and agent memory servers: [docs/research/2026-11-23-competitive-landscape.md](docs/research/2026-11-23-competitive-landscape.md).
 
