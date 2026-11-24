@@ -1,3 +1,4 @@
+import { APP_NAME } from "../../shared/brand";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface State {
@@ -13,14 +14,14 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   }
 
   componentDidCatch(err: Error, info: ErrorInfo) {
-    console.error("[OrionHUD] render error", err, info);
+    console.error(`[${APP_NAME}] render error`, err, info);
   }
 
   render() {
     if (this.state.error === null) return this.props.children;
     return (
       <div className="fatal">
-        <strong>OrionHUD hit a snag</strong>
+        <strong>{APP_NAME} hit a snag</strong>
         <p>Your tasks and save points are stored safely. Reloading usually fixes this.</p>
         <code>{this.state.error}</code>
         <button className="btn btn-primary" onClick={() => window.location.reload()}>

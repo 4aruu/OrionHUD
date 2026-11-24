@@ -2,6 +2,7 @@
 // permission; without it tab.url is undefined and the guard simply stays
 // quiet (isUrlBlacklisted(undefined) === false), which is the right default.
 
+import { APP_NAME } from "../shared/brand";
 import { mutateMeta } from "../shared/db";
 import { evaluateGracePeriod } from "../shared/gracePeriod";
 import { isUrlBlacklisted } from "../shared/urlMatching";
@@ -31,7 +32,7 @@ export async function handleTabChange(url: string | undefined): Promise<void> {
   lastNotifAt.set(workflow.id, now);
   await notify(
     `orion-distraction:${workflow.id}`,
-    "OrionHUD: off track",
+    `${APP_NAME}: off track`,
     `More than ${workflow.globalGracePeriodMins} min on a blocked site during “${workflow.name}”.`
   );
   await mutateMeta((m) => ({ ...m, blacklistedSince: null }));

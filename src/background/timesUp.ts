@@ -1,3 +1,4 @@
+import { APP_NAME } from "../shared/brand";
 import { findTaskNode } from "../shared/taskTree";
 import { evaluateDrift } from "../shared/urlMatching";
 import { taskIdFromAlarmName } from "../shared/alarms";
@@ -22,5 +23,5 @@ export async function handleTaskAlarm(alarm: chrome.alarms.Alarm): Promise<void>
       ? `Time's up for “${task.title}”, and it looks like you've drifted off it.`
       : `Time's up for “${task.title}”. Wrap up, or give it more time in the side panel.`;
 
-  await notify(`orion-notif:${task.id}`, "OrionHUD: time's up", message);
+  await notify(`orion-notif:${task.id}`, `${APP_NAME}: time's up`, message);
 }

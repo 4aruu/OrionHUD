@@ -1,3 +1,4 @@
+import { APP_NAME } from "../../shared/brand";
 import type { ToastState } from "../components/Toast";
 import { buildBrief } from "../../shared/brief";
 import type { IWorkflowState } from "../../shared/types";
@@ -21,7 +22,7 @@ export async function copyBrief(workflow: IWorkflowState, taskId: string, ui: Ui
 export async function clearResumeBadge(): Promise<void> {
   try {
     await chrome.action.setBadgeText({ text: "" });
-    await chrome.action.setTitle({ title: "OrionHUD" });
+    await chrome.action.setTitle({ title: APP_NAME });
   } catch {
     /* not critical */
   }

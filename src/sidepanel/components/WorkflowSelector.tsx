@@ -1,3 +1,4 @@
+import { APP_NAME } from "../../shared/brand";
 import type { IAppMeta, IWorkflowState } from "../../shared/types";
 import { leafProgress, walk } from "../../shared/taskTree";
 import { categoryOf } from "../lib/categories";
@@ -28,7 +29,7 @@ export function WorkflowSelector({ workflows, meta, now, onOpen, onCreate, onSet
         <h2>Never lose your place again</h2>
         <ol>
           <li>Break your work into milestones and nested subtasks.</li>
-          <li>When you switch, step away, or close the browser, OrionHUD saves a save point: your next step, your tabs, your AI threads.</li>
+          <li>When you switch, step away, or close the browser, {APP_NAME} saves a save point: your next step, your tabs, your AI threads.</li>
           <li>Come back to one card that tells you exactly where you were.</li>
         </ol>
         <button className="btn btn-primary btn-full" onClick={onCreate}>

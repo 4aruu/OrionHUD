@@ -1,4 +1,4 @@
-/* OrionHUD side panel. Dark, dense, keyboard-first. System fonts only:
+/* Orion Waypoint side panel. Dark, dense, keyboard-first. System fonts only:
    no network requests from the panel, works offline. */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

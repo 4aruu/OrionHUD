@@ -1,3 +1,5 @@
+import { APP_NAME } from "../shared/brand";
+
 // In-page capture box for Alt+Shift+S (save point) and Alt+Shift+Q (inbox).
 //
 // Injected on demand into one tab via activeTab; never auto-injected.
@@ -61,8 +63,8 @@ function mount(config: CaptureConfig): void {
   const backdrop = el("div", "backdrop");
   const box = el("div", "box");
   box.setAttribute("role", "dialog");
-  box.setAttribute("aria-label", config.mode === "save" ? "OrionHUD save point" : "OrionHUD inbox capture");
-  const label = el("div", "label", config.label || "OrionHUD");
+  box.setAttribute("aria-label", config.mode === "save" ? `${APP_NAME} save point` : `${APP_NAME} inbox capture`);
+  const label = el("div", "label", config.label || APP_NAME);
   const input = el("input");
   input.type = "text";
   input.maxLength = config.mode === "save" ? 280 : 500;
@@ -70,7 +72,7 @@ function mount(config: CaptureConfig): void {
   input.setAttribute("aria-label", input.placeholder);
   const hint = el("div", "hint");
   const left = el("span", undefined, config.mode === "save" ? "Enter to save · Esc to cancel" : "Enter to add · Esc to cancel");
-  const right = el("span", undefined, "OrionHUD");
+  const right = el("span", undefined, APP_NAME);
   hint.append(left, right);
   box.append(label, input, hint);
   backdrop.append(box);

@@ -2,6 +2,7 @@
 // box submits. The box is injected only into the tab the user pressed the
 // shortcut on (activeTab grant), never auto-injected anywhere.
 
+import { APP_NAME } from "../shared/brand";
 import { parseExtensionMessage, isOwnSender, type CaptureMode } from "../shared/messages";
 import { addInboxItem, recordSavePoint } from "../shared/workflowActions";
 import { captureTabs } from "../platform/tabs";
@@ -17,11 +18,11 @@ export const COMMAND_CAPTURE = "quick-capture";
 async function openCaptureBox(mode: CaptureMode, tab: chrome.tabs.Tab | undefined): Promise<void> {
   const { workflow, task } = await getActiveContext();
   if (!workflow) {
-    await notify("orion-no-workflow", "OrionHUD", "Start a workflow in the side panel first.");
+    await notify("orion-no-workflow", APP_NAME, "Start a workflow in the side panel first.");
     return;
   }
   if (mode === "save" && !task) {
-    await notify("orion-no-task", "OrionHUD", "No active task to save. Pick one in the side panel.");
+    await notify("orion-no-task", APP_NAME, "No active task to save. Pick one in the side panel.");
     return;
   }
   const label = mode === "save" ? `Save point · ${task?.title ?? ""}` : `Inbox · ${workflow.name}`;
@@ -45,7 +46,7 @@ async function openCaptureBox(mode: CaptureMode, tab: chrome.tabs.Tab | undefine
       broadcast("command");
       await notify("orion-saved", "Save point recorded", `“${task.title}”. Add a next step from the side panel.`);
     } else {
-      await notify("orion-blocked", "OrionHUD", "Chrome doesn't allow extensions on this page. Use the side panel instead.");
+      await notify("orion-blocked", APP_NAME, "Chrome doesn't allow extensions on this page. Use the side panel instead.");
     }
   }
 }

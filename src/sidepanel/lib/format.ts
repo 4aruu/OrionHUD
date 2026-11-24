@@ -1,3 +1,5 @@
+import { APP_NAME } from "../../shared/brand";
+
 export { formatAgo } from "../../shared/savePoints";
 
 /** "12:05" style countdown; negative values show as overtime. */
@@ -18,6 +20,6 @@ export function formatMinutes(ms: number): string {
 
 export function errorMessage(err: unknown): string {
   if (err instanceof Error && err.name === "OrionError") return err.message;
-  console.error("[OrionHUD]", err);
+  console.error(`[${APP_NAME}]`, err);
   return "Something went wrong. Your data is safe; try again.";
 }

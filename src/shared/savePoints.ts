@@ -5,7 +5,7 @@ import type { ISavePoint, ISavedTab, SavePointTrigger, TabKind, TabsSource } fro
 import { LIMITS } from "./validators";
 
 /**
- * The only URLs OrionHUD will ever store or reopen. Checked on capture AND
+ * The only URLs Orion Waypoint will ever store or reopen. Checked on capture AND
  * again on restore (defense in depth: stored data can be imported or edited).
  * Blocks javascript:, data:, file:, chrome:, chrome-extension:, blob:, etc.
  */

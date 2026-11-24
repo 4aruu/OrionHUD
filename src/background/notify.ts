@@ -1,3 +1,4 @@
+import { APP_NAME } from "../shared/brand";
 import type { ExtensionMessage, StateChangeReason } from "../shared/messages";
 
 /** Tells any open side panel to reload from storage. Safe if none is open. */
@@ -26,7 +27,7 @@ export async function setResumeBadge(on: boolean): Promise<void> {
   try {
     await chrome.action.setBadgeBackgroundColor({ color: "#6366f1" });
     await chrome.action.setBadgeText({ text: on ? "↩" : "" });
-    await chrome.action.setTitle({ title: on ? "OrionHUD: pick up where you left off" : "OrionHUD" });
+    await chrome.action.setTitle({ title: on ? `${APP_NAME}: pick up where you left off` : APP_NAME });
   } catch {
     /* action API unavailable in tests */
   }

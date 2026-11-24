@@ -1,4 +1,4 @@
-// Every runtime message OrionHUD sends. All onMessage handlers must
+// Every runtime message Orion Waypoint sends. All onMessage handlers must
 // (1) check the sender is this extension (see isOwnSender) and
 // (2) parse through parseExtensionMessage. Never cast raw messages.
 

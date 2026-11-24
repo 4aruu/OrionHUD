@@ -2,6 +2,7 @@
 // active task, or drop it in the inbox. contextMenus hands us selectionText
 // directly, so no host permission or content script is needed.
 
+import { APP_NAME } from "../shared/brand";
 import { addInboxItem, addNote } from "../shared/workflowActions";
 import { LIMITS } from "../shared/validators";
 import { getActiveContext } from "./context";
@@ -12,8 +13,8 @@ const MENU_INBOX = "orion-to-inbox";
 
 export function createMenus(): void {
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: MENU_DECISION, title: "Pin to OrionHUD as a decision", contexts: ["selection"] });
-    chrome.contextMenus.create({ id: MENU_INBOX, title: "Send to OrionHUD inbox", contexts: ["selection"] });
+    chrome.contextMenus.create({ id: MENU_DECISION, title: "Pin as a decision (Orion Waypoint)", contexts: ["selection"] });
+    chrome.contextMenus.create({ id: MENU_INBOX, title: `Send to ${APP_NAME} inbox`, contexts: ["selection"] });
   });
 }
 
@@ -27,7 +28,7 @@ async function handle(info: chrome.contextMenus.OnClickData): Promise<void> {
   if (!text) return;
   const { workflow, task } = await getActiveContext();
   if (!workflow) {
-    await notify("orion-menu", "OrionHUD", "Start a workflow first, then pin decisions to it.");
+    await notify("orion-menu", APP_NAME, "Start a workflow first, then pin decisions to it.");
     return;
   }
   const source = info.pageUrl ?? null;
@@ -42,7 +43,7 @@ async function handle(info: chrome.contextMenus.OnClickData): Promise<void> {
     }
     broadcast("menu");
   } catch (err) {
-    await notify("orion-menu", "OrionHUD", err instanceof Error ? err.message : "Couldn't save that.");
+    await notify("orion-menu", APP_NAME, err instanceof Error ? err.message : "Couldn't save that.");
   }
 }
 

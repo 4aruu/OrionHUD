@@ -1,3 +1,4 @@
+import { APP_NAME } from "../../shared/brand";
 import { useEffect, useRef, useState } from "react";
 import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
@@ -147,7 +148,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
         </section>
       )}
 
-      <p className="muted small pad">OrionHUD {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
+      <p className="muted small pad">{APP_NAME} {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
     </div>
   );
 }

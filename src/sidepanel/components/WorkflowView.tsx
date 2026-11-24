@@ -1,3 +1,4 @@
+import { APP_NAME } from "../../shared/brand";
 import { useEffect, useState } from "react";
 import type { IAppMeta, ILiveTabs, ITaskNode, IWorkflowState } from "../../shared/types";
 import { findTaskNode, leafProgress, walk } from "../../shared/taskTree";
@@ -141,7 +142,7 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
 
       {!activeTask && !resumeTask && workflow.rootNodes.length > 0 && (
         <p className="hint-bar">
-          Pick a task and press <kbd>.</kbd> (or ▶) to start. OrionHUD saves your place whenever you switch or step away.
+          Pick a task and press <kbd>.</kbd> (or ▶) to start. {APP_NAME} saves your place whenever you switch or step away.
         </p>
       )}
 
