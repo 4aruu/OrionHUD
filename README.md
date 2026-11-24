@@ -92,7 +92,7 @@ npm run icons:check
 
 `npm run icons` regenerates `icons/*.png` from `icons/src/*.svg`: the toolbar and store icons (16/32/48/128) and the notification icon `public/icons/notify96.png` (the 128 art cropped to its 96×96 artwork, so notifications show it full size; `public/` is copied to the `dist/` root in build and dev). `npm run icons:check` renders them in memory and fails if a committed PNG is stale (pixels compared with a ±2 tolerance; writes nothing). `npm test` runs it afterwards as a `posttest` step, so `npm test -- test/foo.test.ts` still targets one file. Both icon scripts need the `@resvg/resvg-js` native binary, which `npm install` provides.
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm run typecheck`, `npm test` (including the icon check) and `npm run build` on Node 22 for every pull request and every push to `main`, then checks that `dist/manifest.json` exists and that `dist/capture.js` is a self-contained script with no `import`.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm run typecheck`, `npm test` (including the icon check) and `npm run build` on Node 22 (pinned in [`.nvmrc`](.nvmrc); `package.json` `engines` requires `>=22.13.0`) for every pull request and every push to `main`, then checks that `dist/manifest.json` exists and that `dist/capture.js` is a self-contained script with no `import`.
 
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 

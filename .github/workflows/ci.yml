@@ -24,8 +24,8 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          # Vite 8 / Vitest 4 require ^20.19 || >=22.12; 22 is the current LTS line.
-          node-version: 22
+          # Single source of truth for the Node line; package.json engines sets the floor.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
