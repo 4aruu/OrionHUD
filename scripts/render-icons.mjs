@@ -1,4 +1,6 @@
-// Dev-only: renders icons/src/*.svg to icons/icon<px>.png. Run: npm run icons
+// Dev-only: renders icons/src/*.svg to icons/icon<px>.png.
+//   npm run icons        write the PNGs
+//   npm run icons:check  render in memory and fail if a committed PNG is stale (writes nothing)
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
@@ -11,7 +13,8 @@ const jobs = [
   { src: "icon-16.svg", px: 16 },
 ];
 
-for (const { src, px } of jobs) {
+/** Render one job and apply the dimension and 128px padding assertions. Returns PNG bytes. */
+function renderAndAssert({ src, px }) {
   const svg = readFileSync(`${root}icons/src/${src}`, "utf8");
   const rendered = new Resvg(svg, { fitTo: { mode: "width", value: px } }).render();
   if (rendered.width !== px || rendered.height !== px) {
@@ -19,15 +22,44 @@ for (const { src, px } of jobs) {
   }
   if (px === 128) {
     const data = rendered.pixels; // RGBA
+    let count = 0;
+    let first = null;
     for (let y = 0; y < px; y++) {
       for (let x = 0; x < px; x++) {
         if ((x < 16 || x >= 112 || y < 16 || y >= 112) && data[(y * px + x) * 4 + 3] !== 0) {
-          throw new Error(`icon128: non-transparent pixel in padding at (${x}, ${y})`);
+          count++;
+          first ??= [x, y];
         }
       }
     }
+    if (count > 0) {
+      throw new Error(
+        `icon128: ${count} non-transparent pixel(s) in the 16px padding, first at (${first[0]}, ${first[1]})`,
+      );
+    }
   }
-  const out = `icons/icon${px}.png`;
-  writeFileSync(`${root}${out}`, rendered.asPng());
-  console.log(`wrote ${out} (${px}x${px}) from ${src}`);
+  return rendered.asPng();
 }
+
+const check = process.argv.includes("--check");
+
+for (const job of jobs) {
+  const png = renderAndAssert(job);
+  const out = `icons/icon${job.px}.png`;
+  if (check) {
+    let committed = null;
+    try {
+      committed = readFileSync(`${root}${out}`);
+    } catch {
+      // missing file counts as stale
+    }
+    if (!committed || !png.equals(committed)) {
+      console.error(`${out} is stale — run npm run icons`);
+      process.exit(1);
+    }
+  } else {
+    writeFileSync(`${root}${out}`, png);
+    console.log(`wrote ${out} (${job.px}x${job.px}) from ${job.src}`);
+  }
+}
+if (check) console.log(`icons: ${jobs.length} up to date`);
