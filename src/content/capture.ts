@@ -98,7 +98,7 @@ function mount(config: CaptureConfig): void {
         const r = res as { ok?: boolean; error?: string } | undefined;
         if (r?.ok) {
           hint.className = "hint ok";
-          left.textContent = config.mode === "save" ? "Saved. You can pick this up from the side panel." : "Added to inbox.";
+          left.textContent = config.mode === "save" ? `Saved. You can pick this up in ${APP_NAME}.` : "Added to inbox.";
           setTimeout(close, 900);
         } else {
           throw new Error(r?.error ?? "Couldn't save.");

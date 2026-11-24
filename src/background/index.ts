@@ -15,9 +15,13 @@ import {
   refreshLiveTabs,
 } from "./idle";
 import { broadcast } from "./notify";
+import { COMMAND_WINDOW, initSurface, onActionClicked, openPanelWindow } from "./surface";
 
-void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => undefined);
-chrome.idle.setDetectionInterval(IDLE_THRESHOLD_SECONDS);
+// Optional APIs are feature-detected: a browser missing one (Arc has no side
+// panel) loses only that feature, never the whole worker.
+const surfaceReady = initSurface().catch(() => "window" as const);
+chrome.action.onClicked.addListener(() => void surfaceReady.then(onActionClicked));
+if (chrome.idle) chrome.idle.setDetectionInterval(IDLE_THRESHOLD_SECONDS);
 
 chrome.runtime.onInstalled.addListener(() => {
   createMenus();
@@ -37,10 +41,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   void handleTaskAlarm(alarm).then(() => broadcast("alarm"));
 });
 
-chrome.commands.onCommand.addListener((command, tab) => onCommand(command, tab));
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === COMMAND_WINDOW) void openPanelWindow();
+  else onCommand(command, tab);
+});
 chrome.contextMenus.onClicked.addListener((info) => onMenuClicked(info));
 chrome.runtime.onMessage.addListener((raw, sender, respond) => onRuntimeMessage(raw, sender, respond));
-chrome.idle.onStateChanged.addListener((state) => void onIdleStateChanged(state));
+if (chrome.idle) chrome.idle.onStateChanged.addListener((state) => void onIdleStateChanged(state));
 
 chrome.tabs.onActivated.addListener(({ tabId }) => {
   void chrome.tabs

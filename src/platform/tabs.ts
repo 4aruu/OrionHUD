@@ -60,22 +60,48 @@ export async function captureTabs(taskTitle: string | null, fallbackTab?: chrome
   return { tabs: [], tabsSource: "none" };
 }
 
+async function lastNormalWindowId(): Promise<number | undefined> {
+  try {
+    return (await chrome.windows.getLastFocused({ windowTypes: ["normal"] })).id;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
- * Reopens tabs in the current window as one named group. URLs are
+ * The active tab of the user's last focused normal browser window. Never the
+ * Orion panel window, which can be the last focused window in window mode.
+ */
+export async function activeNormalTab(): Promise<chrome.tabs.Tab | undefined> {
+  const windowId = await lastNormalWindowId();
+  if (windowId === undefined) return undefined;
+  const [tab] = await chrome.tabs.query({ active: true, windowId });
+  return tab;
+}
+
+/**
+ * Reopens tabs in the user's last normal window as one named group. URLs are
  * re-validated here even though they were validated on capture: stored data
  * can come from an imported file.
  */
 export async function restoreTabs(tabs: ISavedTab[], taskTitle: string): Promise<number> {
   const urls = tabs.map((t) => t.url).filter(isRestorableUrl);
   if (!urls.length) return 0;
+  // Called from the panel. In window mode the panel's own window is the
+  // "current" one, so always target the user's normal browser window.
+  const windowId = await lastNormalWindowId();
   const created: number[] = [];
   for (const [i, url] of urls.entries()) {
-    const tab = await chrome.tabs.create({ url, active: i === 0 });
+    const tab = await chrome.tabs.create({ url, active: i === 0, windowId });
     if (tab.id !== undefined) created.push(tab.id);
   }
+  if (windowId !== undefined) void chrome.windows.update(windowId, { focused: true }).catch(() => undefined);
   try {
     if (created.length) {
-      const groupId = await chrome.tabs.group({ tabIds: created as [number, ...number[]] });
+      const groupId = await chrome.tabs.group({
+        tabIds: created as [number, ...number[]],
+        ...(windowId !== undefined ? { createProperties: { windowId } } : {}),
+      });
       await chrome.tabGroups.update(groupId, { title: groupTitleFor(taskTitle), color: "purple" });
     }
   } catch {
