@@ -81,7 +81,7 @@ describe("brand", () => {
       .filter(([file]) => /\.(ts|tsx)$/.test(file))
       .flatMap(([file, text]) =>
         text.split("\n").map((line, i) => ({ file, n: i + 1, line: line.trim() }))
-          .filter(({ line }) => !isComment(line) && /side panel|chrome doesn't|in chrome\b/i.test(line)));
+          .filter(({ line }) => !isComment(line) && /side panel|chrome doesn't|chrome will|in chrome\b/i.test(line)));
     expect(hits).toEqual([]);
   });
 });

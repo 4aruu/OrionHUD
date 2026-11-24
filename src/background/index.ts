@@ -14,13 +14,15 @@ import {
   recoverOnStartup,
   refreshLiveTabs,
 } from "./idle";
-import { broadcast } from "./notify";
+import { APP_NAME } from "../shared/brand";
+import { broadcast, notify } from "./notify";
 import { COMMAND_WINDOW, initSurface, onActionClicked, openPanelWindow } from "./surface";
 
 // Optional APIs are feature-detected: a browser missing one (Arc has no side
 // panel) loses only that feature, never the whole worker.
 const surfaceReady = initSurface().catch(() => "window" as const);
-chrome.action.onClicked.addListener(() => void surfaceReady.then(onActionClicked));
+const openFailed = () => notify("orion-open", APP_NAME, `Couldn't open ${APP_NAME}. Try Alt+Shift+O.`);
+chrome.action.onClicked.addListener(() => void surfaceReady.then(onActionClicked).catch(openFailed));
 if (chrome.idle) chrome.idle.setDetectionInterval(IDLE_THRESHOLD_SECONDS);
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -42,7 +44,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 chrome.commands.onCommand.addListener((command, tab) => {
-  if (command === COMMAND_WINDOW) void openPanelWindow();
+  if (command === COMMAND_WINDOW) void openPanelWindow().catch(openFailed);
   else onCommand(command, tab);
 });
 chrome.contextMenus.onClicked.addListener((info) => onMenuClicked(info));

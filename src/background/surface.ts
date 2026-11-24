@@ -57,12 +57,24 @@ export async function onActionClicked(): Promise<void> {
   await openPanelWindow();
 }
 
+// Two quick triggers (double-pressed shortcut, click + shortcut) share one open,
+// so they can't both read "no window yet" and open two.
+let inFlight: Promise<void> | null = null;
+
 /** Focuses the open panel window, or opens one at the right edge of the user's browser window. */
-export async function openPanelWindow(): Promise<void> {
+export function openPanelWindow(): Promise<void> {
+  inFlight ??= focusOrCreate().finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+async function focusOrCreate(): Promise<void> {
   const existing = await sessionGet(WINDOW_KEY);
   if (typeof existing === "number") {
     try {
-      await chrome.windows.update(existing, { focused: true });
+      // state "normal" also brings a minimized panel window back.
+      await chrome.windows.update(existing, { focused: true, state: "normal" });
       return;
     } catch {
       // The user closed it; open a new one.
@@ -77,8 +89,11 @@ export async function openPanelWindow(): Promise<void> {
   };
   try {
     const anchor = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
-    if (anchor.state === "normal" && anchor.left !== undefined && anchor.top !== undefined && anchor.width !== undefined) {
-      data.left = Math.max(0, anchor.left + anchor.width - PANEL_WINDOW.width);
+    const placeable = anchor.state === "normal" || anchor.state === "maximized";
+    if (placeable && anchor.left !== undefined && anchor.top !== undefined && anchor.width !== undefined) {
+      // Stay on the browser window's own monitor: coordinates can be negative on
+      // a monitor left of or above the primary, so clamp to the window, not to 0.
+      data.left = Math.max(anchor.left, anchor.left + anchor.width - PANEL_WINDOW.width);
       data.top = anchor.top;
     }
   } catch {

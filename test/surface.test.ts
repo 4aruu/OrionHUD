@@ -81,7 +81,32 @@ describe("surface", () => {
     });
     await openPanelWindow();
     expect(c.create).toHaveBeenCalledTimes(1);
-    expect(c.update).toHaveBeenLastCalledWith(100, { focused: true });
+    // state "normal" also restores a minimized panel window.
+    expect(c.update).toHaveBeenLastCalledWith(100, { focused: true, state: "normal" });
+  });
+
+  it("two quick triggers open one window, not two", async () => {
+    const c = stubChrome({ sidePanel: "absent" });
+    await Promise.all([openPanelWindow(), openPanelWindow()]);
+    expect(c.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("places the window at the right edge of a maximized browser window too", async () => {
+    const c = stubChrome({ sidePanel: "absent", anchor: { state: "maximized", left: 0, top: 0, width: 1920 } });
+    await openPanelWindow();
+    expect(c.create.mock.calls[0]![0]).toMatchObject({ left: 1920 - PANEL_WINDOW.width, top: 0 });
+  });
+
+  it("stays on a monitor left of the primary (negative coordinates)", async () => {
+    const c = stubChrome({ sidePanel: "absent", anchor: { left: -1920, top: 0, width: 1920 } });
+    await openPanelWindow();
+    expect(c.create.mock.calls[0]![0]).toMatchObject({ left: -PANEL_WINDOW.width, top: 0 });
+  });
+
+  it("never places beside a minimized or fullscreen browser window", async () => {
+    const c = stubChrome({ sidePanel: "absent", anchor: { state: "minimized" } });
+    await openPanelWindow();
+    expect(c.create.mock.calls[0]![0]).not.toHaveProperty("left");
   });
 
   it("opens a new window when the user closed the previous one", async () => {

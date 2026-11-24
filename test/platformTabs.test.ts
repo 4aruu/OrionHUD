@@ -34,6 +34,19 @@ describe("platform/tabs across browsers", () => {
     expect(await restoreTabs([saved("https://example.com/a")], "T")).toBe(1);
   });
 
+  it("opens a browser window for the tabs when only the Orion window is open", async () => {
+    const created: chrome.tabs.CreateProperties[] = [];
+    const winCreate = vi.fn(async () => ({ id: 5, tabs: [{ id: 11 }] }) as chrome.windows.Window);
+    vi.stubGlobal("chrome", {
+      windows: { getLastFocused: vi.fn(async () => Promise.reject(new Error("No last-focused window"))), create: winCreate, update: vi.fn(async () => ({})) },
+      tabs: { create: vi.fn(async (p: chrome.tabs.CreateProperties) => (created.push(p), { id: 12 })), group: vi.fn(async () => 3) },
+      tabGroups: { update: vi.fn(async () => ({})) },
+    });
+    expect(await restoreTabs([saved("https://example.com/a"), saved("https://example.com/b")], "T")).toBe(2);
+    expect(winCreate).toHaveBeenCalledWith({ url: "https://example.com/a", focused: true });
+    expect(created).toEqual([{ url: "https://example.com/b", active: false, windowId: 5 }]);
+  });
+
   it("reads the active tab of the last normal window, never the Orion window", async () => {
     const getLastFocused = vi.fn(async () => ({ id: 9 }) as chrome.windows.Window);
     const query = vi.fn(async () => [{ id: 4, url: "https://docs.example.com" }]);

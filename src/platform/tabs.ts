@@ -89,10 +89,23 @@ export async function restoreTabs(tabs: ISavedTab[], taskTitle: string): Promise
   if (!urls.length) return 0;
   // Called from the panel. In window mode the panel's own window is the
   // "current" one, so always target the user's normal browser window.
-  const windowId = await lastNormalWindowId();
+  let windowId = await lastNormalWindowId();
   const created: number[] = [];
+  if (windowId === undefined) {
+    // No browser window open (only the Orion window): open one with the first tab.
+    try {
+      const win = await chrome.windows.create({ url: urls[0], focused: true });
+      windowId = win?.id;
+      const first = win?.tabs?.[0]?.id;
+      if (first !== undefined) created.push(first);
+      if (windowId !== undefined) urls.shift();
+    } catch {
+      // Fall through: tabs.create below lets the browser pick a window.
+    }
+  }
   for (const [i, url] of urls.entries()) {
-    const tab = await chrome.tabs.create({ url, active: i === 0, windowId });
+    // Only the first reopened tab takes focus (it may already be the new window's tab).
+    const tab = await chrome.tabs.create({ url, active: i === 0 && created.length === 0, windowId });
     if (tab.id !== undefined) created.push(tab.id);
   }
   if (windowId !== undefined) void chrome.windows.update(windowId, { focused: true }).catch(() => undefined);
