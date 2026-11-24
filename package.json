@@ -1,9 +1,9 @@
 {
-  "name": "orion-hud",
+  "name": "orion-waypoint",
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Context-aware workflow HUD browser extension.",
+  "description": "Saves your tabs, AI chats and next step whenever you get pulled away, so you pick up exactly where you left off.",
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --config vite.capture.config.ts",

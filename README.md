@@ -1,4 +1,8 @@
-# OrionHUD
+# Orion Waypoint
+
+<img src="icons/icon128.png" alt="Orion Waypoint icon" width="96" />
+
+Got pulled away? Pick up exactly where you left off.
 
 **Pick up exactly where you left off.** A Chrome side-panel extension for developers who build with several AIs at once: your milestones and nested subtasks, the tabs and AI threads behind each one, and a handoff brief any AI or agent can pick up. All saved automatically when you get interrupted, all kept on your machine.
 
@@ -12,7 +16,7 @@ Why it exists, and how it differs from tab managers, AI-memory plugins and agent
 | **Resume card** | When you come back: "Welcome back · saved 42 min ago when you stepped away", the breadcrumb (`Auth refactor › Token refresh › Write retry test`), your next step, which AI threads you had open, **Reopen tabs** (as a named tab group) and **Copy brief**. The toolbar icon shows ↩ while a resume card is waiting. |
 | **Outliner** | Subtasks on subtasks (8 levels), fully keyboard driven. Progress rolls up from leaves. Finishing a task suggests what's next; finishing the last child offers to close the parent. Paste a bulleted plan from any AI chat and it becomes a task tree. |
 | **Milestones** | Flag any task (`m`). A strip at the top shows progress per milestone so the big picture survives while you're deep in a leaf. |
-| **Decisions** | Select text in any AI reply or page → right-click → **Pin to OrionHUD as a decision**. Itemized and append-only on purpose. |
+| **Decisions** | Select text in any AI reply or page → right-click → **Pin as a decision (Orion Waypoint)**. Itemized and append-only on purpose. |
 | **Inbox** | `Alt+Shift+Q` on any page parks a side quest without leaving your task. Triage later into a task or subtask. |
 | **Handoff brief** | `c` (or Copy brief) puts a compact Markdown context block on your clipboard: path, milestone, progress, next step, decisions, open subtasks, links. Paste it into Claude, ChatGPT, Cursor, anything. |
 | **Timebox & distraction guard** | Optional per task timer; optional nudge after a grace period on sites you list. |
@@ -82,7 +86,10 @@ npm run typecheck
 npm test
 npm run build
 npm run harness
+npm run icons
 ```
+
+`npm run icons` regenerates `icons/*.png` from `icons/src/*.svg`.
 
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 

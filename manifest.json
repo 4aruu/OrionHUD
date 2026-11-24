@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "OrionHUD",
+  "name": "Orion Waypoint",
   "version": "0.2.0",
-  "description": "Pick up exactly where you left off: milestones, nested subtasks, AI threads and tabs, saved automatically when you get interrupted.",
+  "description": "Saves your tabs, AI chats and next step whenever you get pulled away, so you pick up exactly where you left off.",
   "minimum_chrome_version": "116",
   "permissions": [
     "storage",
@@ -38,7 +38,7 @@
     }
   },
   "action": {
-    "default_title": "OrionHUD",
+    "default_title": "Orion Waypoint",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
