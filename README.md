@@ -2,7 +2,7 @@
 
 <img src="icons/icon128.png" alt="Orion Waypoint icon" width="96" />
 
-Got pulled away? Pick up exactly where you left off.
+**Got pulled away? Pick up exactly where you left off.**
 
 A Chrome side-panel extension for developers who build with several AIs at once: your milestones and nested subtasks, the tabs and AI threads behind each one, and a handoff brief any AI or agent can pick up. All saved automatically when you get interrupted, all kept on your machine.
 
