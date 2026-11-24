@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { APP_NAME } from "../../shared/brand";
 import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
 import { backupFileName } from "../lib/format";
 import type { Ui } from "../lib/ui";
+import { BrandName } from "./BrandName";
 
 interface Props {
   workflows: IWorkflowState[];
@@ -149,7 +149,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
         </section>
       )}
 
-      <p className="muted small pad">{APP_NAME} {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
+      <p className="muted small pad"><BrandName /> {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
     </div>
   );
 }

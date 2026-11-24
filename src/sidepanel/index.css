@@ -51,6 +51,7 @@ kbd {
 .small { font-size: 11px; }
 .pad { padding: 8px 2px; }
 .spacer { flex: 1; }
+.brand-name { white-space: nowrap; }
 
 /* ── Layout ─────────────────────────────────────────── */
 .panel { min-height: 100vh; display: flex; flex-direction: column; }

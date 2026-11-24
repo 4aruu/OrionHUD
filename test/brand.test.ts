@@ -42,6 +42,19 @@ describe("brand", () => {
     expect(backupFileName(new Date())).toMatch(/^orion-waypoint-backup-\d{4}-\d{2}-\d{2}\.json$/);
   });
 
+  it("the brand name never breaks across lines", () => {
+    // Side panel: running text uses <BrandName />, never a bare {APP_NAME} (template literals like `${APP_NAME}` are fine).
+    const bare = Object.entries(sources)
+      .filter(([file]) => file.startsWith("../src/sidepanel/") && file.endsWith(".tsx") && !file.endsWith("/BrandName.tsx"))
+      .filter(([, text]) => /(?<!\$)\{APP_NAME\}/.test(text))
+      .map(([file]) => file);
+    expect(bare).toEqual([]);
+    expect(sources["../src/sidepanel/index.css"]).toContain(".brand-name { white-space: nowrap; }");
+    // Capture box: the brand span in the hint row.
+    expect(sources["../src/content/capture.ts"]).toContain(".hint .brand { white-space: nowrap; }");
+    expect(sources["../src/content/capture.ts"]).toContain('el("span", "brand", APP_NAME)');
+  });
+
   it("storage name is frozen so updating users keep their data", () => {
     expect(sources["../src/shared/db.ts"]).toContain('const DB_NAME = "orion-hud";');
   });

@@ -37,6 +37,7 @@ input { all: unset; box-sizing: border-box; width: 100%; padding: 10px 12px; bor
   background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: #f1f5f9; font-size: 14px; }
 input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
 .hint { margin-top: 8px; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; gap: 8px; }
+.hint .brand { white-space: nowrap; }
 .hint.ok { color: #34d399; } .hint.err { color: #f87171; }
 @media (prefers-reduced-motion: no-preference) { .box { animation: in 140ms ease-out; }
   @keyframes in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } } }
@@ -72,7 +73,7 @@ function mount(config: CaptureConfig): void {
   input.setAttribute("aria-label", input.placeholder);
   const hint = el("div", "hint");
   const left = el("span", undefined, config.mode === "save" ? "Enter to save · Esc to cancel" : "Enter to add · Esc to cancel");
-  const right = el("span", undefined, APP_NAME);
+  const right = el("span", "brand", APP_NAME);
   hint.append(left, right);
   box.append(label, input, hint);
   backdrop.append(box);

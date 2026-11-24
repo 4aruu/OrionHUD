@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { APP_NAME } from "../../shared/brand";
 import type { IAppMeta, ILiveTabs, ITaskNode, IWorkflowState } from "../../shared/types";
 import { findTaskNode, leafProgress, walk } from "../../shared/taskTree";
 import { startWorkflow, stopWorkflow, switchTask } from "../../shared/workflowActions";
@@ -14,6 +13,7 @@ import { TaskInspector } from "./TaskInspector";
 import { InboxPanel } from "./InboxPanel";
 import { SwitchPrompt } from "./SwitchPrompt";
 import { ShortcutHelp } from "./ShortcutHelp";
+import { BrandName } from "./BrandName";
 
 interface Props {
   workflow: IWorkflowState;
@@ -142,7 +142,7 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
 
       {!activeTask && !resumeTask && workflow.rootNodes.length > 0 && (
         <p className="hint-bar">
-          Pick a task and press <kbd>.</kbd> (or ▶) to start. {APP_NAME} saves your place whenever you switch or step away.
+          Pick a task and press <kbd>.</kbd> (or ▶) to start. <BrandName /> saves your place whenever you switch or step away.
         </p>
       )}
 
