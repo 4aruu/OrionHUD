@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Context-aware workflow HUD browser extension.",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --config vite.capture.config.ts && vite build --config bridge/vite.config.ts",
