@@ -1,4 +1,4 @@
-// Dev-only: renders icons/src/*.svg to the PNGs under icons/.
+// Dev-only: renders icons/src/*.svg to the PNGs under icons/ (and public/icons/ for the notification icon).
 //   npm run icons        write the PNGs
 //   npm run icons:check  render in memory and fail if a committed PNG is stale (writes nothing)
 import { readFileSync, writeFileSync } from "node:fs";
@@ -9,13 +9,14 @@ import { decodeRgba } from "./png-decode.mjs";
 const root = fileURLToPath(new URL("..", import.meta.url));
 // `padded`: the store icon keeps its 16px transparent border. `viewBox`: crop the source before
 // rendering; notify96 is the 128 art's 96x96 artwork without the padding, so Chrome
-// notifications show it full size.
+// notifications show it full size. It lives in public/ because the manifest never references it,
+// so Vite copies it to dist/icons/ in both build and crxjs dev mode.
 const jobs = [
   { src: "icon-128.svg", px: 128, out: "icons/icon128.png", padded: true },
   { src: "icon-128.svg", px: 48, out: "icons/icon48.png" },
   { src: "icon-32.svg", px: 32, out: "icons/icon32.png" },
   { src: "icon-16.svg", px: 16, out: "icons/icon16.png" },
-  { src: "icon-128.svg", px: 96, out: "icons/notify96.png", viewBox: "16 16 96 96" },
+  { src: "icon-128.svg", px: 96, out: "public/icons/notify96.png", viewBox: "16 16 96 96" },
 ];
 
 // Renders are compared with a ±2 tolerance: a committed icon is stale if its size differs or any

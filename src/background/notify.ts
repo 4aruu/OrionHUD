@@ -9,16 +9,26 @@ export function broadcast(reason: StateChangeReason): void {
   });
 }
 
+// Manifest icon, so it always ships; used if the notification icon can't be loaded.
+const FALLBACK_ICON = "icons/icon128.png";
+
 export async function notify(id: string, title: string, message: string): Promise<void> {
-  try {
-    await chrome.notifications.create(id, {
+  const show = (icon: string) =>
+    chrome.notifications.create(id, {
       type: "basic",
-      iconUrl: chrome.runtime.getURL(NOTIFICATION_ICON),
+      iconUrl: chrome.runtime.getURL(icon),
       title,
       message: message.slice(0, 300),
     });
+  try {
+    await show(NOTIFICATION_ICON);
   } catch {
-    // Notifications disabled at the OS level. Nothing else to do.
+    // create() rejects when the icon can't be loaded; one retry with the manifest icon.
+    try {
+      await show(FALLBACK_ICON);
+    } catch {
+      // Still failing (e.g. the notifications API is unavailable). A missed notification is not worth crashing a handler.
+    }
   }
 }
 
