@@ -1,11 +1,11 @@
-import { APP_NAME } from "../shared/brand";
-
 // In-page capture box for Alt+Shift+S (save point) and Alt+Shift+Q (inbox).
 //
 // Injected on demand into one tab via activeTab; never auto-injected.
 // Security: closed shadow root (page JS can't reach it), plain DOM APIs and
 // textContent only (no innerHTML), a constructable stylesheet (not blocked
 // by page CSP), and key events stopped so page shortcuts don't fire.
+
+import { APP_NAME } from "../shared/brand";
 
 type Mode = "save" | "inbox";
 

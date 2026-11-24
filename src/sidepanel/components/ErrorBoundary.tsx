@@ -1,5 +1,5 @@
-import { APP_NAME } from "../../shared/brand";
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { APP_NAME } from "../../shared/brand";
 
 interface State {
   error: string | null;

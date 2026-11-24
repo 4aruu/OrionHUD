@@ -1,4 +1,3 @@
-import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { APP_NAME } from "../src/shared/brand";
 import { createMenus } from "../src/background/menus";

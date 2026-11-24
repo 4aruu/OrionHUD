@@ -1,5 +1,5 @@
-import { APP_NAME } from "../../shared/brand";
 import { useEffect, useState } from "react";
+import { APP_NAME } from "../../shared/brand";
 import type { IAppMeta, ILiveTabs, ITaskNode, IWorkflowState } from "../../shared/types";
 import { findTaskNode, leafProgress, walk } from "../../shared/taskTree";
 import { startWorkflow, stopWorkflow, switchTask } from "../../shared/workflowActions";

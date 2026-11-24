@@ -1,6 +1,6 @@
-import { APP_NAME } from "../shared/brand";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { APP_NAME } from "../shared/brand";
 import "./index.css";
 import App from "./App";
 

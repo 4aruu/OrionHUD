@@ -1,5 +1,5 @@
-import { APP_NAME } from "../../shared/brand";
 import { useEffect, useRef, useState } from "react";
+import { APP_NAME } from "../../shared/brand";
 import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
