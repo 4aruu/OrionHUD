@@ -16,7 +16,7 @@ Why it exists, and how it differs from tab managers, AI-memory plugins and agent
 | **Resume card** | When you come back: "Welcome back · saved 42 min ago when you stepped away", the breadcrumb (`Auth refactor › Token refresh › Write retry test`), your next step, which AI threads you had open, **Reopen tabs** (as a named tab group) and **Copy brief**. The toolbar icon shows ↩ while a resume card is waiting. |
 | **Outliner** | Subtasks on subtasks (8 levels), fully keyboard driven. Progress rolls up from leaves. Finishing a task suggests what's next; finishing the last child offers to close the parent. Paste a bulleted plan from any AI chat and it becomes a task tree. |
 | **Milestones** | Flag any task (`m`). A strip at the top shows progress per milestone so the big picture survives while you're deep in a leaf. |
-| **Decisions** | Select text in any AI reply or page → right-click → **Pin as a decision (Orion Waypoint)**. Itemized and append-only on purpose. |
+| **Decisions** | Select text in any AI reply or page → right-click → **Orion Waypoint › Pin as a decision**. Itemized and append-only on purpose. |
 | **Inbox** | `Alt+Shift+Q` on any page parks a side quest without leaving your task. Triage later into a task or subtask. |
 | **Handoff brief** | `c` (or Copy brief) puts a compact Markdown context block on your clipboard: path, milestone, progress, next step, decisions, open subtasks, links. Paste it into Claude, ChatGPT, Cursor, anything. |
 | **Timebox & distraction guard** | Optional per task timer; optional nudge after a grace period on sites you list. |
@@ -46,7 +46,7 @@ Optional: Settings → **Turn on tab memory** to let save points remember tabs (
 | `alarms` | Timeboxes, rolling tab snapshot | none |
 | `idle` | Auto save point when you step away | none |
 | `activeTab`, `scripting` | Show the capture box on the tab where you pressed the shortcut, nowhere else | none |
-| `contextMenus` | "Pin as decision" / "Send to inbox" on selected text | none |
+| `contextMenus` | "Pin as a decision" / "Send to inbox" on selected text | none |
 | `notifications` | Time's up, confirmations | none |
 | `tabGroups` | Reopen a task's tabs as one named group | none |
 | `tabs` (**optional**, asked when you turn on tab memory) | Read tab URLs/titles for save points and the distraction guard | "Read your browsing history" |
@@ -103,7 +103,7 @@ npm run icons
 6. Reopen tabs → a purple group named after the task.
 7. `Alt+Shift+S` on a normal page: capture box appears, Enter saves. On `chrome://settings`: notification instead.
 8. `Alt+Shift+Q`: inbox item appears with source link.
-9. Select text → right-click → Pin as decision; appears under Decisions with "source".
+9. Select text → right-click → Orion Waypoint › Pin as a decision; appears under Decisions with "source".
 10. Copy brief → paste into a chat; Markdown is intact.
 11. Export backup, delete the workflow, import the backup; everything returns (tasks come back paused).
 12. Quit Chrome with tab memory on, restart: "browser restarted" save point with tabs.

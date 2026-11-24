@@ -13,8 +13,8 @@ const MENU_INBOX = "orion-to-inbox";
 
 export function createMenus(): void {
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: MENU_DECISION, title: "Pin as a decision (Orion Waypoint)", contexts: ["selection"] });
-    chrome.contextMenus.create({ id: MENU_INBOX, title: `Send to ${APP_NAME} inbox`, contexts: ["selection"] });
+    chrome.contextMenus.create({ id: MENU_DECISION, title: "Pin as a decision", contexts: ["selection"] });
+    chrome.contextMenus.create({ id: MENU_INBOX, title: "Send to inbox", contexts: ["selection"] });
   });
 }
 

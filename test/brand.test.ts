@@ -63,13 +63,13 @@ describe("brand", () => {
     expect(sources["../src/shared/workflowActions.ts"]).toContain('const BACKUP_APP = "OrionHUD";');
   });
 
-  it("context menu titles use the new name", () => {
+  it("context menu labels do not repeat the brand (Chrome nests them under it)", () => {
     const create = vi.fn();
     vi.stubGlobal("chrome", { contextMenus: { removeAll: (cb: () => void) => cb(), create } });
     createMenus();
     expect(create.mock.calls.map(([o]) => o.title)).toEqual([
-      "Pin as a decision (Orion Waypoint)",
-      "Send to Orion Waypoint inbox",
+      "Pin as a decision",
+      "Send to inbox",
     ]);
   });
 });
