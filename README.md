@@ -84,7 +84,7 @@ npm run build
 npm run harness
 ```
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm run typecheck`, `npm test` and `npm run build` on Node 22 for every pull request and every push to `main`, then checks that `dist/manifest.json` exists and that `dist/capture.js` is a self-contained script with no `import`.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm run typecheck`, `npm test` and `npm run build` on Node 22 (pinned in [`.nvmrc`](.nvmrc); `package.json` `engines` requires `>=22.13.0`) for every pull request and every push to `main`, then checks that `dist/manifest.json` exists and that `dist/capture.js` is a self-contained script with no `import`.
 
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 
