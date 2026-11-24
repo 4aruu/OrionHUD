@@ -6,7 +6,7 @@
 
 A Chrome side-panel extension for developers who build with several AIs at once: your milestones and nested subtasks, the tabs and AI threads behind each one, and a handoff brief any AI or agent can pick up. All saved automatically when you get interrupted, all kept on your machine.
 
-Why it exists, and how it differs from tab managers, AI-memory plugins and agent memory servers: [docs/research/2026-11-23-competitive-landscape.md](docs/research/2026-11-23-competitive-landscape.md).
+Why it exists, and how it differs from tab managers, AI-memory plugins and agent memory servers: [docs/research/2026-11-23-competitive-landscape.md](docs/research/2026-11-23-competitive-landscape.md) (written when the project was called OrionHUD).
 
 ## What it does
 
@@ -87,9 +87,10 @@ npm test
 npm run build
 npm run harness
 npm run icons
+npm run icons:check
 ```
 
-`npm run icons` regenerates `icons/*.png` from `icons/src/*.svg`: the toolbar and store icons (16/32/48/128) and the notification icon `notify96.png` (the 128 art cropped to its 96×96 artwork, so notifications show it full size).
+`npm run icons` regenerates `icons/*.png` from `icons/src/*.svg`: the toolbar and store icons (16/32/48/128) and the notification icon `notify96.png` (the 128 art cropped to its 96×96 artwork, so notifications show it full size). `npm run icons:check` renders them in memory and fails if a committed PNG is stale (pixels compared with a ±2 tolerance; writes nothing). `npm test` runs it afterwards as a `posttest` step, so `npm test -- test/foo.test.ts` still targets one file. Both icon scripts need the `@resvg/resvg-js` native binary, which `npm install` provides.
 
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 

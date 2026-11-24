@@ -199,6 +199,8 @@ Shared defs:
 </svg>
 ```
 
+Revised after review (commit 10b5e46): rim gradient stops .4/.05/0 and a .75 stroke inset by .375 so the 32px rim no longer reads as an outline.
+
 16 (star to be snapped to the pixel grid at export, e.g. center 10.5,5.5 → tips at 10.5,1 / 15,5.5 / 10.5,10 / 6,5.5):
 
 ```svg

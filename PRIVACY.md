@@ -1,6 +1,6 @@
 # Orion Waypoint privacy policy
 
-Last updated: 2026-11-23
+Last updated: 2026-11-24
 
 Orion Waypoint is a browser extension that stores your work plan and save points so you can resume interrupted work.
 
