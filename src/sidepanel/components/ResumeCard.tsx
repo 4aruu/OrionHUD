@@ -6,6 +6,7 @@ import { markResumeShown, recordSavePoint } from "../../shared/workflowActions";
 import { validateNextStep } from "../../shared/validators";
 import { restoreTabs } from "../../platform/tabs";
 import { clearResumeBadge, copyBrief, type Ui } from "../lib/ui";
+import { countLabel } from "../lib/format";
 import { formatAgo, formatCountdown } from "../lib/format";
 
 interface Props {
@@ -118,7 +119,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
           </span>
         )}
         {task.microNotes.some((n) => n.kind === "decision") && (
-          <span>{task.microNotes.filter((n) => n.kind === "decision").length} decisions</span>
+          <span>{countLabel(task.microNotes.filter((n) => n.kind === "decision").length, "decision")}</span>
         )}
         {aiTabs.length > 0 && <span>{[...new Set(aiTabs.map((t) => t.vendor))].join(", ")} thread{aiTabs.length > 1 ? "s" : ""}</span>}
         {remaining !== null && (
