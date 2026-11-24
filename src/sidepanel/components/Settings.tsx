@@ -85,7 +85,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
           <li>
             <kbd>Alt+Shift+Q</kbd> capture a side quest
           </li>
-          <li>Right-click selected text → pin as decision</li>
+          <li>Right-click selected text → <BrandName /> › Pin as a decision</li>
         </ul>
         <button className="btn btn-ghost btn-sm" onClick={() => void chrome.tabs.create({ url: "chrome://extensions/shortcuts" })}>
           Change shortcuts

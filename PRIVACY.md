@@ -8,7 +8,7 @@ Orion Waypoint is a browser extension that stores your work plan and save points
 
 - Workflows, tasks, notes, decisions and inbox items you create.
 - Save points: a next step you type, the time, and, only if you turn on **tab memory**, the addresses (URLs) and titles of tabs in your current window when the save point is made.
-- For text you pin from a page (right-click → Pin as decision / Send to inbox): the selected text and that page's address.
+- For text you pin from a page (right-click → Pin as a decision / Send to inbox): the selected text and that page's address.
 
 ## Where it goes
 

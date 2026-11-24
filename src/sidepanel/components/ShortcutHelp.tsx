@@ -19,7 +19,7 @@ const KEYS: [string, string][] = [
 const GLOBAL: [string, string][] = [
   ["Alt+Shift+S", "Save point from any page"],
   ["Alt+Shift+Q", "Capture a side quest from any page"],
-  ["Right-click text", "Pin as decision / send to inbox"],
+  ["Right-click text", "Pin as a decision / Send to inbox"],
 ];
 
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {
