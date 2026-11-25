@@ -10,13 +10,25 @@ export interface Ui {
   reload: () => Promise<void>;
 }
 
-export async function copyBrief(workflow: IWorkflowState, taskId: string, ui: Ui): Promise<void> {
+/** Copies text; a failure is always reported as a toast. Resolves to whether it worked. */
+export async function copyText(text: string, ui: Ui): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(buildBrief(workflow, taskId));
-    ui.toast({ kind: "info", text: "Brief copied. Paste it into any AI chat or agent." });
+    await navigator.clipboard.writeText(text);
+    return true;
   } catch {
     ui.toast({ kind: "error", text: "Couldn't copy. Click inside the panel and try again." });
+    return false;
   }
+}
+
+/**
+ * Copies a task's brief. `quiet` skips the success toast for a CopyButton,
+ * which confirms in place; the keyboard shortcut has no button, so it toasts.
+ */
+export async function copyBrief(workflow: IWorkflowState, taskId: string, ui: Ui, { quiet = false } = {}): Promise<boolean> {
+  const ok = await copyText(buildBrief(workflow, taskId), ui);
+  if (ok && !quiet) ui.toast({ kind: "info", text: "Brief copied. Paste it into any AI chat or agent." });
+  return ok;
 }
 
 export async function clearResumeBadge(): Promise<void> {

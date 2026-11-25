@@ -7,6 +7,8 @@ import type { Ui } from "../lib/ui";
 import { BrandName } from "./BrandName";
 import { BridgeSettings } from "./BridgeSettings";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { BusyButton } from "./Buttons";
+import { useBusy } from "../hooks/useBusy";
 import { walk } from "../../shared/taskTree";
 
 function taskCount(w: IWorkflowState): number {
@@ -25,6 +27,8 @@ export function Settings({ workflows, ui, onBack }: Props) {
   const [tabsOn, setTabsOn] = useState<boolean | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [exporting, runExport] = useBusy();
+  const [importing, runImport] = useBusy();
   const pendingDelete = workflows.find((w) => w.id === confirmDelete) ?? null;
 
   useEffect(() => {
@@ -114,12 +118,12 @@ export function Settings({ workflows, ui, onBack }: Props) {
           addresses in plain text, so store it like any other private document.
         </p>
         <div className="row-buttons">
-          <button className="btn btn-ghost btn-sm" onClick={() => void doExport()}>
+          <BusyButton className="btn btn-ghost btn-sm" busy={exporting} onClick={() => void runExport(doExport)}>
             Export backup
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => fileRef.current?.click()}>
+          </BusyButton>
+          <BusyButton className="btn btn-ghost btn-sm" busy={importing} onClick={() => fileRef.current?.click()}>
             Import backup
-          </button>
+          </BusyButton>
           <input
             ref={fileRef}
             type="file"
@@ -128,7 +132,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
             onChange={(e) => {
               const f = e.target.files?.[0];
               e.target.value = "";
-              if (f) void doImport(f);
+              if (f) void runImport(() => doImport(f));
             }}
           />
         </div>

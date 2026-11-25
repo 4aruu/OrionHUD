@@ -7,6 +7,8 @@ import { validateNextStep } from "../../shared/validators";
 import { restoreTabs } from "../../platform/tabs";
 import { clearResumeBadge, copyBrief, type Ui } from "../lib/ui";
 import { countLabel, formatAgo, formatCountdown } from "../lib/format";
+import { useBusy } from "../hooks/useBusy";
+import { BusyButton, CopyButton } from "./Buttons";
 
 interface Props {
   workflow: IWorkflowState;
@@ -50,6 +52,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [hint, setHint] = useState<string | null>(null);
+  const [saving, runSave] = useBusy();
 
   if (!welcome && !isActive) return null;
 
@@ -103,7 +106,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
             className="inline-form"
             onSubmit={(e) => {
               e.preventDefault();
-              void saveNextStep();
+              void runSave(saveNextStep);
             }}
           >
             <input
@@ -124,9 +127,9 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
                 setHint(null);
               }}
             />
-            <button className="btn btn-primary btn-sm" type="submit">
+            <BusyButton className="btn btn-primary btn-sm" type="submit" busy={saving}>
               Save
-            </button>
+            </BusyButton>
           </form>
         ) : (
           <button
@@ -165,9 +168,9 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
             Resume task
           </button>
         )}
-        <button className="btn btn-ghost btn-sm" onClick={() => void copyBrief(workflow, task.id, ui)}>
+        <CopyButton className="btn btn-ghost btn-sm" copy={() => copyBrief(workflow, task.id, ui, { quiet: true })}>
           Copy brief
-        </button>
+        </CopyButton>
       </div>
 
       {(task.subTasks.length > 0 || tabs.length > 0 || (welcome && latest)) && (

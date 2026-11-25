@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { AnimatePresence } from "motion/react";
+import { Reveal, Swap } from "./Motion";
+import { swap } from "../lib/motion";
 import type { IAppMeta, ILiveTabs, ITaskNode, IWorkflowState } from "../../shared/types";
 import { findTaskNode, leafProgress, walk } from "../../shared/taskTree";
 import { startWorkflow, stopWorkflow, switchTask } from "../../shared/workflowActions";
@@ -57,7 +60,7 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
       if (e.key === "?") {
         e.preventDefault();
         setHelp(true);
-      } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && (t === document.body || t === null)) {
+      } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && (t === document.body || t === null || t.matches("[data-screen-heading]"))) {
         e.preventDefault();
         document.querySelector<HTMLElement>(".tree")?.focus();
       }
@@ -75,15 +78,17 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
     else if (toId) void ui.run(() => startWorkflow(workflow.id, toId));
   }
 
+  // The prompt stays up (its button busy) until the save point is written,
+  // then gives way to the Now strip for the next task.
   async function confirmSwitch(nextStep: string) {
     if (!pending || !activeTask) return;
     const { toId } = pending;
-    setPending(null);
     await ui.run(async () => {
       const tabs = await captureTabs(activeTask.title);
       if (toId) await switchTask(workflow.id, toId, { trigger: "switch", nextStep, ...tabs });
       else await stopWorkflow({ trigger: "stop", nextStep, ...tabs });
     }, toId ? "Saved where you were." : "Paused. Your save point is ready when you come back.");
+    setPending(null);
     if (toId) setFocusedId(toId);
   }
 
@@ -102,30 +107,36 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
         </button>
       </header>
 
-      {pending && activeTask && (
-        <SwitchPrompt
-          leavingTitle={activeTask.title}
-          targetTitle={pending.toId ? (findTaskNode(workflow.rootNodes, pending.toId)?.title ?? null) : null}
-          onConfirm={(s) => void confirmSwitch(s)}
-          onCancel={() => setPending(null)}
-        />
-      )}
-
-      {resumeTask && !pending && (
-        <ResumeCard
-          workflow={workflow}
-          task={resumeTask}
-          isActive={resumeTask.id === activeId}
-          meta={meta}
-          live={live}
-          now={now}
-          ui={ui}
-          onResume={(id) => requestSwitch(id)}
-          onFocus={setFocusedId}
-          onPause={() => requestSwitch(null)}
-          onDone={() => void completeWithFeedback({ workflow, node: resumeTask, activeId, ui, onStart: requestSwitch })}
-        />
-      )}
+      {/* The switch prompt takes the Now strip's place; popLayout so its
+          autoFocus input is ready the moment it appears. */}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {pending && activeTask ? (
+          <Swap key="switch" className="slot" variants={swap}>
+            <SwitchPrompt
+              leavingTitle={activeTask.title}
+              targetTitle={pending.toId ? (findTaskNode(workflow.rootNodes, pending.toId)?.title ?? null) : null}
+              onConfirm={confirmSwitch}
+              onCancel={() => setPending(null)}
+            />
+          </Swap>
+        ) : resumeTask ? (
+          <Swap key="now" className="slot" variants={swap}>
+            <ResumeCard
+              workflow={workflow}
+              task={resumeTask}
+              isActive={resumeTask.id === activeId}
+              meta={meta}
+              live={live}
+              now={now}
+              ui={ui}
+              onResume={(id) => requestSwitch(id)}
+              onFocus={setFocusedId}
+              onPause={() => requestSwitch(null)}
+              onDone={() => void completeWithFeedback({ workflow, node: resumeTask, activeId, ui, onStart: requestSwitch })}
+            />
+          </Swap>
+        ) : null}
+      </AnimatePresence>
 
       {!activeTask && !resumeTask && workflow.rootNodes.length > 0 && (
         <p className="hint-bar">
@@ -162,19 +173,21 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
         </button>
       </nav>
 
-      {drawer === "notes" && focused && (
-        <div id="drawer-notes" className="drawer">
-          <p className="drawer-for">
-            For <strong>{focused.title}</strong>. Pick another task in the plan to see its notes.
-          </p>
-          <TaskInspector key={focused.id} workflow={workflow} task={focused} now={now} ui={ui} />
-        </div>
-      )}
-      {drawer === "inbox" && (
-        <div id="drawer-inbox" className="drawer">
-          <InboxPanel workflow={workflow} focusedId={focusedId} activeId={activeId} now={now} ui={ui} />
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {drawer === "notes" && focused && (
+          <Reveal key="notes" id="drawer-notes" className="drawer">
+            <p className="drawer-for">
+              For <strong>{focused.title}</strong>. Pick another task in the plan to see its notes.
+            </p>
+            <TaskInspector key={focused.id} workflow={workflow} task={focused} now={now} ui={ui} />
+          </Reveal>
+        )}
+        {drawer === "inbox" && (
+          <Reveal key="inbox" id="drawer-inbox" className="drawer">
+            <InboxPanel workflow={workflow} focusedId={focusedId} activeId={activeId} now={now} ui={ui} />
+          </Reveal>
+        )}
+      </AnimatePresence>
 
       {help && <ShortcutHelp onClose={() => setHelp(false)} />}
     </div>
