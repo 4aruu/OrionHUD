@@ -9,8 +9,10 @@ import {
   removeBridgePermission,
   requestBridgePermission,
 } from "../../platform/bridge";
-import type { Ui } from "../lib/ui";
+import { copyText, type Ui } from "../lib/ui";
+import { useBusy } from "../hooks/useBusy";
 import { BrandName } from "./BrandName";
+import { BusyButton, CopyButton } from "./Buttons";
 
 /** Run from the repository root after `npm run build`. */
 export function installCommand(extensionId: string): string {
@@ -37,6 +39,7 @@ function describe(status: BridgeStatus | null): { label: string; tone: "ok" | "w
 export function BridgeSettings({ ui }: { ui: Ui }) {
   const [on, setOn] = useState<boolean | null>(null);
   const [status, setStatus] = useState<BridgeStatus | null>(null);
+  const [checking, runCheck] = useBusy();
 
   useEffect(() => {
     void hasBridgePermission().then(setOn);
@@ -44,9 +47,10 @@ export function BridgeSettings({ ui }: { ui: Ui }) {
     return onBridgeStatus(setStatus);
   }, []);
 
+  // Busy until the background has tried to connect (it replies once done).
   function checkAgain() {
     const msg: ExtensionMessage = { type: "ORION_BRIDGE_CONNECT" };
-    void chrome.runtime.sendMessage(msg).catch(() => undefined);
+    void runCheck(() => chrome.runtime.sendMessage(msg).catch(() => undefined));
   }
 
   function toggle() {
@@ -61,15 +65,6 @@ export function BridgeSettings({ ui }: { ui: Ui }) {
       setOn(granted);
       if (!granted) ui.toast({ kind: "info", text: `No problem. Agents won't be able to reach ${APP_NAME}.` });
     });
-  }
-
-  async function copyCommand() {
-    try {
-      await navigator.clipboard.writeText(installCommand(chrome.runtime.id));
-      ui.toast({ kind: "info", text: "Install command copied. Run it in a terminal in the project folder." });
-    } catch {
-      ui.toast({ kind: "error", text: "Couldn't copy. Click inside the panel and try again." });
-    }
   }
 
   const { label, tone } = describe(status);
@@ -91,7 +86,10 @@ export function BridgeSettings({ ui }: { ui: Ui }) {
           {status?.state !== "connected" && (
             <>
               <code className="bridge-cmd">{installCommand(chrome.runtime.id)}</code>
-              <p className="muted small">The command prints the line to add <BrandName /> to Claude Code or Cursor. Setup steps are in the README.</p>
+              <p className="muted small">
+                Run it in a terminal in the project folder. It prints the line to add <BrandName /> to Claude Code or Cursor. Setup steps are in the
+                README.
+              </p>
             </>
           )}
         </>
@@ -102,12 +100,12 @@ export function BridgeSettings({ ui }: { ui: Ui }) {
         </button>
         {on && status?.state !== "connected" && (
           <>
-            <button className="btn btn-ghost btn-sm" onClick={() => void copyCommand()}>
+            <CopyButton className="btn btn-ghost btn-sm" copy={() => copyText(installCommand(chrome.runtime.id), ui)}>
               Copy install command
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={checkAgain}>
+            </CopyButton>
+            <BusyButton className="btn btn-ghost btn-sm" busy={checking} onClick={checkAgain}>
               Check again
-            </button>
+            </BusyButton>
           </>
         )}
       </div>

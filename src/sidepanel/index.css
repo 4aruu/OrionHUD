@@ -29,7 +29,13 @@
   --r-md: 8px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-  --t: 150ms ease-out;
+  /* Motion: the same numbers as src/sidepanel/lib/motion.ts. Calm, short,
+     ease-out, never bouncy. Reduced motion zeroes them (bottom of file). */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 220ms;
+  --ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --t: var(--dur-fast) var(--ease);
 }
 
 html { min-height: 100%; background: var(--bg); }
@@ -59,21 +65,53 @@ kbd {
 
 /* ── Layout ─────────────────────────────────────────── */
 .panel { min-height: 100vh; display: flex; flex-direction: column; }
-.panel-body { flex: 1; padding: 12px 16px 72px; display: flex; flex-direction: column; gap: 12px; }
+/* position: relative anchors the screen that's fading out (popped out of flow). */
+.panel-body { position: relative; flex: 1; padding: 12px 16px 72px; display: flex; flex-direction: column; gap: 12px; }
+/* A screen's heading takes focus when the screen opens; it isn't a control, so no ring. */
+[data-screen-heading]:focus { outline: none; }
+/* Wraps a component that may render nothing (the Now strip): no empty gap. */
+.slot:empty { display: none; }
 .loading { height: 100vh; }
 .fatal { min-height: 100vh; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; justify-content: center; padding: 24px; }
 .fatal code { color: var(--text-2); font-size: 12px; word-break: break-all; }
 .workflow, .settings, .create, .selector { display: flex; flex-direction: column; gap: 12px; }
-.workflow { gap: 16px; }
+.workflow { position: relative; gap: 16px; }
 
 /* ── Buttons ────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 32px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid transparent;
   font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap;
-  transition: background-color var(--t), border-color var(--t);
 }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Every pressable thing: tint on hover, a small press, the same easing. */
+.btn, .icon-btn, .link-btn, .chip-btn, .drawer-tab, .check, .chevron, .add-row, .done-fold,
+.wf-card, .now-title, .next-text, .section-toggle, .tag button {
+  transition: background-color var(--t), border-color var(--t), color var(--t), box-shadow var(--t), opacity var(--t), transform var(--t);
+}
+/* Text buttons lift 1px on hover; dense rows and icons don't (it jitters). */
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+:is(.btn, .icon-btn, .link-btn, .chip-btn, .drawer-tab, .check, .chevron, .tag button):active:not(:disabled) {
+  transform: scale(0.97);
+}
+/* Full-width surfaces press less: 0.97 of 400px would shrink them by 12px. */
+:is(.btn-full, .wf-card, .add-row, .done-fold, .now-title, .next-text):active:not(:disabled) { transform: scale(0.99); }
+/* Inside clipped containers the ring sits inset, so it's never cut off. */
+:is(.wf-card, .done-fold):focus-visible { outline-offset: -2px; }
+
+/* Busy and "Copied ✓": both labels share one grid cell, so the button keeps
+   its width. The busy swap waits 150ms, so quick saves never flash. */
+.has-swap { display: inline-grid; place-items: center; }
+.has-swap > .swap-item { grid-area: 1 / 1; display: inline-flex; align-items: center; gap: 8px; transition: opacity var(--t); }
+.has-swap > .swap-item[data-off] { opacity: 0; }
+.has-swap[aria-busy="true"] { cursor: progress; }
+.has-swap[aria-busy="true"] > .swap-item { transition-delay: 150ms; }
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-ghost { background: transparent; border-color: var(--line-strong); color: var(--text); font-weight: 500; }
@@ -101,7 +139,7 @@ kbd {
 .wf-title h2 { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wf-cat { font-size: 12px; color: var(--text-3); }
 .bar { flex: 1; display: block; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
-.bar > span { display: block; height: 100%; width: 100%; background: var(--text-2); transform-origin: left center; transition: transform 300ms ease-out; }
+.bar > span { display: block; height: 100%; width: 100%; background: var(--text-2); transform-origin: left center; transition: transform var(--dur-slow) var(--ease); }
 
 /* ── "Now" strip, full width above the plan ─────────── */
 .now {
@@ -164,7 +202,14 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .plan-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: -8px; }
 .section-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .plan-count { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-.tree { display: flex; flex-direction: column; gap: 12px; outline: none; border-radius: var(--r-md); }
+/* Spacing lives inside each animated group (padding, not gap), so a group
+   folding away takes its spacing with it instead of leaving a 12px jump. */
+.tree { display: flex; flex-direction: column; outline: none; border-radius: var(--r-md); }
+.tree > * + * { margin-top: 12px; }
+.tree > .tree-item { padding-bottom: 12px; }
+.tree > .tree-item + * { margin-top: 0; }
+.tree > .tree-item:last-child { padding-bottom: 0; }
+.tree-item > .group-new { margin-top: 12px; }
 .tree:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .group { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); overflow: hidden; }
 .row {
@@ -197,9 +242,18 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .row-progress { font-size: 12px; color: var(--text-3); font-weight: 400; font-variant-numeric: tabular-nums; }
 .row-dot { width: 6px; height: 6px; border-radius: 1px; background: var(--text-2); flex-shrink: 0; }
 .badge-now { font-size: 12px; font-weight: 600; color: var(--accent); }
-.row-actions { display: none; gap: 2px; }
-.row-focused .row-actions { display: flex; }
-@media (hover: hover) { .row:hover .row-actions { display: flex; } }
+/* Row actions take no space until shown, then fade in (@starting-style;
+   browsers without it just show them). */
+.row-actions {
+  display: none; gap: 2px; opacity: 0;
+  transition: opacity var(--t), display var(--dur-fast) allow-discrete;
+}
+.row-focused .row-actions { display: flex; opacity: 1; }
+@starting-style { .row-focused .row-actions { opacity: 0; } }
+@media (hover: hover) {
+  .row:hover .row-actions { display: flex; opacity: 1; }
+  @starting-style { .row:hover .row-actions { opacity: 0; } }
+}
 .row-edit { padding-right: 8px; }
 .row-input { min-height: 28px !important; padding: 2px 8px !important; }
 .done-fold {
@@ -227,7 +281,9 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .drawer-tab:hover { color: var(--text); border-color: var(--line-strong); }
 .drawer-tab[aria-expanded="true"] { color: var(--text); border-color: var(--accent-line); background: var(--surface); }
 .drawer-n { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.drawer { display: flex; flex-direction: column; gap: 12px; margin-top: -4px; }
+/* Net 12px below the tabs, carried as padding inside the animated height
+   (the -16px cancels the flex gap), so opening and closing never jumps. */
+.drawer { display: flex; flex-direction: column; gap: 12px; margin-top: -16px; padding-top: 12px; }
 .drawer-for { font-size: 12px; color: var(--text-3); }
 .drawer-for strong { color: var(--text-2); font-weight: 600; }
 
@@ -339,9 +395,15 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .toast > span { flex: 1; }
 .toast-error { border-color: rgba(240, 138, 122, 0.55); }
 
-@media (prefers-reduced-motion: no-preference) {
-  .toast, .switch-prompt { animation: rise 150ms ease-out; }
-  @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* Reduced motion: CSS transitions become instant and nothing moves. (Motion
+   components follow the same setting through MotionConfig.) The spinner keeps
+   turning, slower: it's the only sign that something is still working. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; }
+  :is(.btn, .icon-btn, .link-btn, .chip-btn, .drawer-tab, .check, .chevron, .add-row, .done-fold, .wf-card, .now-title, .next-text, .tag button):is(:hover, :active) {
+    transform: none !important;
+  }
+  .spinner { animation-duration: 1.4s; }
 }
 
 /* ── Tooltips (icon buttons: hover and keyboard focus) ── */

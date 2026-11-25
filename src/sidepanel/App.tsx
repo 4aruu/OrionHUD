@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence } from "motion/react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { MotionRoot, Screen } from "./components/Motion";
 import { Toast, type ToastState } from "./components/Toast";
 import { WorkflowSelector } from "./components/WorkflowSelector";
 import { CreateWorkflowForm } from "./components/CreateWorkflowForm";
@@ -14,6 +16,12 @@ type View = { name: "home" } | { name: "create" } | { name: "settings" } | { nam
 function App() {
   const { data, loadError, reload } = useOrion();
   const [view, setView] = useState<View | null>(null);
+  // The first screen appears in place; focus only follows screens the user opened.
+  const [navigated, setNavigated] = useState(false);
+  const go = useCallback((next: View) => {
+    setNavigated(true);
+    setView(next);
+  }, []);
   const [toast, setToast] = useState<ToastState | null>(null);
   const toastId = useRef(0);
   const now = useNow(30_000);
@@ -63,35 +71,42 @@ function App() {
   }
 
   const current = view.name === "workflow" ? data.workflows.find((w) => w.id === view.id) : undefined;
+  const screenKey = view.name === "workflow" ? `workflow:${view.id}` : view.name;
 
   return (
     <div className="panel">
       <main className="panel-body">
-        {view.name === "home" && (
-          <WorkflowSelector
-            workflows={data.workflows}
-            meta={data.meta}
-            now={now}
-            onOpen={(id) => setView({ name: "workflow", id })}
-            onCreate={() => setView({ name: "create" })}
-            onSettings={() => setView({ name: "settings" })}
-          />
-        )}
-        {view.name === "create" && (
-          <CreateWorkflowForm ui={ui} onCreated={(id) => setView({ name: "workflow", id })} onCancel={() => setView({ name: "home" })} />
-        )}
-        {view.name === "settings" && <Settings workflows={data.workflows} ui={ui} onBack={() => setView({ name: "home" })} />}
-        {view.name === "workflow" &&
-          (current ? (
-            <WorkflowView key={current.id} workflow={current} meta={data.meta} live={data.live} ui={ui} onBack={() => setView({ name: "home" })} />
-          ) : (
-            <div className="empty">
-              <p>That workflow no longer exists.</p>
-              <button className="btn btn-primary btn-sm" onClick={() => setView({ name: "home" })}>
-                Back to workflows
-              </button>
-            </div>
-          ))}
+        {/* popLayout: the next screen mounts at once (autoFocus fields work
+            immediately) while the old one fades out on top, out of the flow. */}
+        <AnimatePresence mode="popLayout" initial={false}>
+          <Screen key={screenKey} focusOnEnter={navigated}>
+            {view.name === "home" && (
+              <WorkflowSelector
+                workflows={data.workflows}
+                meta={data.meta}
+                now={now}
+                onOpen={(id) => go({ name: "workflow", id })}
+                onCreate={() => go({ name: "create" })}
+                onSettings={() => go({ name: "settings" })}
+              />
+            )}
+            {view.name === "create" && (
+              <CreateWorkflowForm ui={ui} onCreated={(id) => go({ name: "workflow", id })} onCancel={() => go({ name: "home" })} />
+            )}
+            {view.name === "settings" && <Settings workflows={data.workflows} ui={ui} onBack={() => go({ name: "home" })} />}
+            {view.name === "workflow" &&
+              (current ? (
+                <WorkflowView workflow={current} meta={data.meta} live={data.live} ui={ui} onBack={() => go({ name: "home" })} />
+              ) : (
+                <div className="empty">
+                  <p>That workflow no longer exists.</p>
+                  <button className="btn btn-primary btn-sm" onClick={() => go({ name: "home" })}>
+                    Back to workflows
+                  </button>
+                </div>
+              ))}
+          </Screen>
+        </AnimatePresence>
       </main>
       <Toast toast={toast} onClose={closeToast} />
     </div>
@@ -101,7 +116,9 @@ function App() {
 export default function AppWithErrorBoundary() {
   return (
     <ErrorBoundary>
-      <App />
+      <MotionRoot>
+        <App />
+      </MotionRoot>
     </ErrorBoundary>
   );
 }

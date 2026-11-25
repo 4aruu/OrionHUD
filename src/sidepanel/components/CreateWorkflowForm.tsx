@@ -4,6 +4,7 @@ import { parseOutline, countOutline } from "../../shared/outline";
 import { LIMITS, validateDomain, validateWorkflowName } from "../../shared/validators";
 import { CATEGORY_DISTRACTIONS, JOB_CATEGORIES, type CategoryId } from "../lib/categories";
 import type { Ui } from "../lib/ui";
+import { BusyButton } from "./Buttons";
 
 // What you've typed survives closing the panel mid-form; cleared on create or Cancel.
 const DRAFT_KEY = "orion.newWorkflowDraft";
@@ -244,9 +245,9 @@ export function CreateWorkflowForm({ ui, onCreated, onCancel }: Props) {
         </p>
       )}
 
-      <button className="btn btn-primary btn-full" type="submit" aria-busy={busy}>
-        {busy ? "Creating…" : "Create workflow"}
-      </button>
+      <BusyButton className="btn btn-primary btn-full" type="submit" busy={busy}>
+        Create workflow
+      </BusyButton>
     </form>
   );
 }

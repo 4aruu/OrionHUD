@@ -145,7 +145,7 @@ test("data survives a reload and the active workflow reopens", async ({ panel })
 
 test("copy brief puts the handoff brief on the clipboard", async ({ panel }) => {
   // Extension pages can't be granted clipboard-read, so record what the real
-  // writeText call receives (it still runs: the toast only shows if it resolved).
+  // writeText call receives (it still runs: the button only confirms if it resolved).
   await panel.evaluate(() => {
     const real = navigator.clipboard.writeText.bind(navigator.clipboard);
     navigator.clipboard.writeText = (text: string) => {
@@ -156,10 +156,20 @@ test("copy brief puts the handoff brief on the clipboard", async ({ panel }) => 
   await createWorkflow(panel, "Payments API v2", PLAN);
   await workOn(panel, "Token refresh");
   await resumeCard(panel).getByRole("button", { name: "Copy brief" }).click();
-  await expect(toast(panel)).toContainText("Brief copied.");
+  // The button confirms in place (no toast), then turns back into "Copy brief".
+  await expect(resumeCard(panel).getByRole("button", { name: "Copied ✓" })).toBeVisible();
+  await expect(toast(panel)).toHaveCount(0);
   const brief = await panel.evaluate(() => (window as unknown as { __copied: string }).__copied);
   expect(brief).toContain("Token refresh");
   expect(brief).toContain("Write retry test");
+  await expect(resumeCard(panel).getByRole("button", { name: "Copy brief" })).toBeVisible();
+});
+
+test("the c shortcut still confirms a copy with a toast (there's no button to change)", async ({ panel }) => {
+  await createWorkflow(panel, "Payments API v2", PLAN);
+  await panel.getByRole("treeitem").filter({ hasText: "Token refresh" }).click();
+  await panel.getByRole("tree").press("c");
+  await expect(toast(panel)).toContainText("Brief copied.");
 });
 
 test("backup: export, delete, import brings the workflow back", async ({ panel }, info) => {

@@ -4,6 +4,7 @@ import { addNote, deleteNote, restoreNote, setTaskTimer, toggleMilestone } from 
 import { restoreTabs } from "../../platform/tabs";
 import { copyBrief, type Ui } from "../lib/ui";
 import { countLabel, formatAgo, formatMinutes } from "../lib/format";
+import { CopyButton } from "./Buttons";
 
 const TIMEBOXES = [0, 15, 25, 45, 60, 90];
 
@@ -66,9 +67,9 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
           <button className={`btn btn-ghost btn-sm ${task.isMilestone ? "btn-on" : ""}`} aria-pressed={task.isMilestone} onClick={() => void ui.run(() => toggleMilestone(workflow.id, task.id))}>
             ⚑ Milestone
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => void copyBrief(workflow, task.id, ui)}>
+          <CopyButton className="btn btn-ghost btn-sm" copy={() => copyBrief(workflow, task.id, ui, { quiet: true })}>
             Copy brief
-          </button>
+          </CopyButton>
         </div>
       </header>
 

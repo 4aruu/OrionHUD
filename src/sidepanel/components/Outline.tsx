@@ -1,4 +1,6 @@
-import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { AnimatePresence } from "motion/react";
+import { Reveal } from "./Motion";
 import type { ITaskNode, IWorkflowState } from "../../shared/types";
 import { findPath, findTaskNode, flattenVisible, leafProgress, type VisibleRow } from "../../shared/taskTree";
 import { parseOutline } from "../../shared/outline";
@@ -319,35 +321,41 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
         </div>
       )}
       {newAtTop && edit && <div className="group group-solo" role="none">{editInput(edit.depth)}</div>}
-      {groups.map((g) => (
-        <Fragment key={g.root.id}>
-          <div className={`group ${g.root.subTasks.length ? "" : "group-solo"}`} role="none">
-            {g.rows.map((r) => renderRow(r))}
-            {g.doneCount > 0 && (
-              <button
-                className="done-fold"
-                aria-expanded={g.showing}
-                aria-label={`${g.showing ? "Hide" : "Show"} ${g.doneCount} done in ${g.root.title}`}
-                onClick={() =>
-                  setShownDone((prev) => {
-                    const next = new Set(prev);
-                    if (!next.delete(g.root.id)) next.add(g.root.id);
-                    return next;
-                  })
-                }
-              >
-                <span>✓ {g.doneCount} done</span>
-                <span className="done-fold-act">{g.showing ? "Hide" : "Show"}</span>
-              </button>
-            )}
-          </div>
-          {edit?.kind === "new" && edit.parentId === null && edit.anchorId !== null && g.rows.some((r) => r.node.id === edit.anchorId) && (
-            <div className="group group-solo" role="none">
-              {editInput(1)}
+      {/* Rows and groups grow in and fold out (add, delete, complete, expand,
+          collapse, show/hide done), so the plan below glides rather than jumps. */}
+      <AnimatePresence initial={false}>
+        {groups.map((g) => (
+          <Reveal key={g.root.id} className="tree-item">
+            <div className={`group ${g.root.subTasks.length ? "" : "group-solo"}`} role="none">
+              <AnimatePresence initial={false}>{g.rows.map((r) => renderRow(r))}</AnimatePresence>
+              {g.doneCount > 0 && (
+                <button
+                  className="done-fold"
+                  aria-expanded={g.showing}
+                  aria-label={`${g.showing ? "Hide" : "Show"} ${g.doneCount} done in ${g.root.title}`}
+                  onClick={() =>
+                    setShownDone((prev) => {
+                      const next = new Set(prev);
+                      if (!next.delete(g.root.id)) next.add(g.root.id);
+                      return next;
+                    })
+                  }
+                >
+                  <span>✓ {g.doneCount} done</span>
+                  <span className="done-fold-act">{g.showing ? "Hide" : "Show"}</span>
+                </button>
+              )}
             </div>
-          )}
-        </Fragment>
-      ))}
+            {/* The new-task input rides inside the group it follows (not as a
+                presence child), so it moves at once: never two inputs at a time. */}
+            {edit?.kind === "new" && edit.parentId === null && edit.anchorId !== null && g.rows.some((r) => r.node.id === edit.anchorId) && (
+              <div className="group group-solo group-new" role="none">
+                {editInput(1)}
+              </div>
+            )}
+          </Reveal>
+        ))}
+      </AnimatePresence>
       {rows.length > 0 && !edit && (
         <button className="add-row" onClick={() => {
           setFocusedId(null);
@@ -367,7 +375,7 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
         const p = hasKids ? leafProgress([node]) : null;
         const renaming = edit?.kind === "rename" && edit.id === node.id;
         return (
-          <div key={node.id}>
+          <Reveal key={node.id}>
             {renaming ? (
               editInput(depth)
             ) : (
@@ -395,7 +403,9 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                       void ui.run(() => setCollapsed(workflow.id, node.id, !node.collapsed));
                     }}
                   >
-                    {node.collapsed ? "▸" : "▾"}
+                    <span className={`caret ${node.collapsed ? "" : "caret-open"}`} aria-hidden="true">
+                      ▸
+                    </span>
                   </button>
                 ) : (
                   <span className="chevron-spacer" />
@@ -458,7 +468,7 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
               </div>
             )}
             {edit?.kind === "new" && edit.parentId !== null && edit.anchorId === node.id && editInput(edit.depth)}
-          </div>
+          </Reveal>
         );
   }
 }
