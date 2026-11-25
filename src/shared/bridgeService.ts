@@ -6,6 +6,7 @@
 // working on (the active task) and its subtasks. It can't see other
 // workflows, touch other branches, or delete anything.
 
+import { APP_NAME } from "./brand";
 import { getMeta, getWorkflow } from "./db";
 import { buildBrief, inline } from "./brief";
 import { findTaskNode } from "./taskTree";
@@ -22,7 +23,7 @@ export interface BridgeOutcome {
 const MAX_LISTED = 50;
 
 const NO_ACTIVE_TASK =
-  "No task is active in OrionHUD. Ask the user to pick one in the side panel (select it and press “.”).";
+  `No task is active in ${APP_NAME}. Ask the user to pick one in the ${APP_NAME} panel (select it and press “.”).`;
 
 function inScope(task: ITaskNode, id: string): ITaskNode | undefined {
   return id === task.id ? task : findTaskNode(task.subTasks, id);
@@ -70,7 +71,7 @@ function fromError(id: number, err: unknown): BridgeResponse {
     }
   }
   // Never forward internal error text: it can contain storage details.
-  return errorResponse(id, "internal", "OrionHUD couldn't do that. Try again, or use the side panel.");
+  return errorResponse(id, "internal", `${APP_NAME} couldn't do that. Try again, or use the ${APP_NAME} panel.`);
 }
 
 async function activeContext(): Promise<{ workflow: IWorkflowState; task: ITaskNode } | null> {

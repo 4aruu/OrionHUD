@@ -1,4 +1,4 @@
-/* OrionHUD side panel, "Ledger": a graphite work surface, hairline rules,
+/* Orion Waypoint panel, "Ledger": a graphite work surface, hairline rules,
    one amber accent for what you're doing now. System fonts only: no network
    requests from the panel, works offline. No blur, no glow, no gradients. */
 
@@ -55,6 +55,7 @@ kbd {
 .small { font-size: 12px; }
 .pad { padding: 8px 0; }
 .spacer { flex: 1; }
+.brand-name { white-space: nowrap; }
 
 /* ── Layout ─────────────────────────────────────────── */
 .panel { min-height: 100vh; display: flex; flex-direction: column; }

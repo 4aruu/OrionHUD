@@ -6,6 +6,7 @@
 // alive (Chrome 105+), which is what lets it answer agents. Status for the
 // side panel lives in chrome.storage.session.
 
+import { APP_NAME } from "../shared/brand";
 import { BRIDGE_HOST_NAME, errorResponse, parseHostMessage, type BridgeState } from "../shared/bridgeProtocol";
 import { handleBridgeRequest } from "../shared/bridgeService";
 import { hasBridgePermission, writeBridgeStatus } from "../platform/bridge";
@@ -67,7 +68,7 @@ async function doConnect(): Promise<void> {
       return;
     }
     void handleBridgeRequest(msg)
-      .catch(() => ({ response: errorResponse(msg.id, "internal", "OrionHUD couldn't do that."), changed: false }))
+      .catch(() => ({ response: errorResponse(msg.id, "internal", `${APP_NAME} couldn't do that.`), changed: false }))
       .then(({ response, changed }) => {
         if (port === p) p.postMessage(response);
         if (changed) broadcast("bridge");

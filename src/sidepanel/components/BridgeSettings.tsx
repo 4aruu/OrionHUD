@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { APP_NAME } from "../../shared/brand";
 import type { BridgeStatus } from "../../shared/bridgeProtocol";
 import type { ExtensionMessage } from "../../shared/messages";
 import {
@@ -9,8 +10,9 @@ import {
   requestBridgePermission,
 } from "../../platform/bridge";
 import type { Ui } from "../lib/ui";
+import { BrandName } from "./BrandName";
 
-/** Run from the OrionHUD folder after `npm run build`. */
+/** Run from the repository root after `npm run build`. */
 export function installCommand(extensionId: string): string {
   return `npx --yes --package=./bridge orionhud-bridge install --extension-id ${extensionId}`;
 }
@@ -18,7 +20,7 @@ export function installCommand(extensionId: string): string {
 function describe(status: BridgeStatus | null): { label: string; tone: "ok" | "warn" | "muted" } {
   switch (status?.state) {
     case "connected":
-      return { label: `Connected${status.hostVersion ? ` · bridge ${status.hostVersion}` : ""}. Agents can use OrionHUD now.`, tone: "ok" };
+      return { label: `Connected${status.hostVersion ? ` · bridge ${status.hostVersion}` : ""}. Agents can use ${APP_NAME} now.`, tone: "ok" };
     case "connecting":
       return { label: "Connecting…", tone: "muted" };
     case "not-installed":
@@ -57,14 +59,14 @@ export function BridgeSettings({ ui }: { ui: Ui }) {
     // Called directly in the click handler: Chrome requires a user gesture.
     void requestBridgePermission().then((granted) => {
       setOn(granted);
-      if (!granted) ui.toast({ kind: "info", text: "No problem. Agents won't be able to reach OrionHUD." });
+      if (!granted) ui.toast({ kind: "info", text: `No problem. Agents won't be able to reach ${APP_NAME}.` });
     });
   }
 
   async function copyCommand() {
     try {
       await navigator.clipboard.writeText(installCommand(chrome.runtime.id));
-      ui.toast({ kind: "info", text: "Install command copied. Run it in a terminal in the OrionHUD folder." });
+      ui.toast({ kind: "info", text: "Install command copied. Run it in a terminal in the project folder." });
     } catch {
       ui.toast({ kind: "error", text: "Couldn't copy. Click inside the panel and try again." });
     }
@@ -78,7 +80,7 @@ export function BridgeSettings({ ui }: { ui: Ui }) {
       <p className="muted">
         Lets coding agents (Claude Code, Cursor) read your current task's brief, add and check off its subtasks, and log decisions. Agents can only touch
         the task you're working on and never delete anything. The connection stays on this computer; what an agent reads goes to its AI, like a
-        pasted brief. Chrome describes this as “Communicate with cooperating
+        pasted brief. Your browser will describe this as “Communicate with cooperating
         native applications”.
       </p>
       {on && (
@@ -89,7 +91,7 @@ export function BridgeSettings({ ui }: { ui: Ui }) {
           {status?.state !== "connected" && (
             <>
               <code className="bridge-cmd">{installCommand(chrome.runtime.id)}</code>
-              <p className="muted small">The command prints the line to add OrionHUD to Claude Code or Cursor. Setup steps are in the README.</p>
+              <p className="muted small">The command prints the line to add <BrandName /> to Claude Code or Cursor. Setup steps are in the README.</p>
             </>
           )}
         </>

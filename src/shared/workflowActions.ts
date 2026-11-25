@@ -3,6 +3,7 @@
 // mutateMeta (atomic across the side panel and the service worker), and
 // every user string is validated here, at the boundary.
 
+import { APP_NAME } from "./brand";
 import { deleteWorkflow, getMeta, getWorkflow, listWorkflows, mutateMeta, mutateWorkflow, putWorkflows } from "./db";
 import { clearTaskAlarm, scheduleTaskAlarm } from "./alarms";
 import { normalizeWorkflow } from "./normalize";
@@ -614,6 +615,7 @@ export async function markResumeShown(now: number = Date.now()): Promise<IAppMet
 
 // ─── Backup ────────────────────────────────────────────────────────────────
 
+// Frozen v0.1/v0.2 backup file marker. Never rename: it keeps older backups importable.
 const BACKUP_APP = "OrionHUD";
 const BACKUP_VERSION = 2;
 
@@ -636,7 +638,7 @@ export async function importBackup(json: string): Promise<{ imported: number }> 
   }
   const rec = parsed as Record<string, unknown> | null;
   if (!rec || rec["app"] !== BACKUP_APP || !Array.isArray(rec["workflows"])) {
-    throw new OrionError("invalid-backup", "That file isn't an OrionHUD backup.");
+    throw new OrionError("invalid-backup", `That file isn't an ${APP_NAME} backup.`);
   }
   const raw = rec["workflows"] as unknown[];
   const workflows = raw.map(normalizeWorkflow);

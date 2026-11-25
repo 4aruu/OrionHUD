@@ -18,7 +18,7 @@ describe("extension id and manifest", () => {
   it("restricts allowed_origins to exactly that extension", () => {
     expect(buildHostManifest("/x/launch.sh", ID)).toEqual({
       name: "com.orionhud.bridge",
-      description: "OrionHUD agent bridge",
+      description: "Orion Waypoint agent bridge",
       path: "/x/launch.sh",
       type: "stdio",
       allowed_origins: [`chrome-extension://${ID}/`],

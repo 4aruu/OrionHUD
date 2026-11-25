@@ -37,7 +37,7 @@ export async function readSession(path: string): Promise<Session | null> {
 }
 
 export const UNAVAILABLE =
-  "OrionHUD isn't reachable. Ask the user to open Chrome with OrionHUD and check that Settings → Agent bridge says Connected.";
+  "Orion Waypoint isn't reachable. Ask the user to open Chrome with Orion Waypoint and check that Settings → Agent bridge says Connected.";
 
 export type CallBridge = (call: BridgeCall) => Promise<BridgeResponse>;
 
@@ -59,7 +59,7 @@ export function createHostClient(getSession: () => Promise<Session | null>, time
         socket.destroy();
         resolve(res);
       };
-      const timer = setTimeout(() => finish(errorResponse(id, "timeout", "OrionHUD didn't answer in time.")), timeoutMs);
+      const timer = setTimeout(() => finish(errorResponse(id, "timeout", "Orion Waypoint didn't answer in time.")), timeoutMs);
 
       socket.once("error", () => finish(errorResponse(id, "unavailable", UNAVAILABLE)));
       socket.once("close", () => finish(errorResponse(id, "unavailable", UNAVAILABLE)));

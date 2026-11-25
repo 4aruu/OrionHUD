@@ -1,6 +1,6 @@
 # orionhud-bridge
 
-Lets coding agents (Claude Code, Cursor, any MCP client) read and update the task tree in the [OrionHUD](../README.md) Chrome extension. One dependency-free Node file that is both a stdio MCP server and a Chrome native-messaging host.
+Lets coding agents (Claude Code, Cursor, any MCP client) read and update the task tree in the [Orion Waypoint](../README.md) Chrome extension. One dependency-free Node file that is both a stdio MCP server and a Chrome native-messaging host.
 
 Setup steps: [../README.md#agent-bridge-claude-code-cursor](../README.md#agent-bridge-claude-code-cursor). Security: [../docs/bridge-threat-model.md](../docs/bridge-threat-model.md).
 

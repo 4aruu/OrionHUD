@@ -1,8 +1,12 @@
-# OrionHUD
+# Orion Waypoint
 
-**Pick up exactly where you left off.** A Chrome side-panel extension for developers who build with several AIs at once: your milestones and nested subtasks, the tabs and AI threads behind each one, and a handoff brief any AI or agent can pick up. All saved automatically when you get interrupted, all kept on your machine.
+<img src="icons/icon128.png" alt="Orion Waypoint icon" width="96" />
 
-Why it exists, and how it differs from tab managers, AI-memory plugins and agent memory servers: [docs/research/2026-11-23-competitive-landscape.md](docs/research/2026-11-23-competitive-landscape.md).
+**Got pulled away? Pick up exactly where you left off.**
+
+A Chrome side-panel extension for developers who build with several AIs at once: your milestones and nested subtasks, the tabs and AI threads behind each one, and a handoff brief any AI or agent can pick up. All saved automatically when you get interrupted, all kept on your machine.
+
+Why it exists, and how it differs from tab managers, AI-memory plugins and agent memory servers: [docs/research/2026-11-23-competitive-landscape.md](docs/research/2026-11-23-competitive-landscape.md) (written when the project was called OrionHUD).
 
 ## What it does
 
@@ -12,7 +16,7 @@ Why it exists, and how it differs from tab managers, AI-memory plugins and agent
 | **Now strip** | The task you're on sits at the top of the panel with its one next step and **Mark done**, **Pause** and **Copy brief**. When you come back it reads "Where you left off · saved 42 min ago when you stepped away", with the breadcrumb (`Auth refactor › Token refresh`), which AI threads you had open, and **Reopen tabs** (as a named tab group). The toolbar icon shows ↩ while one is waiting. |
 | **Outliner** | Subtasks on subtasks (8 levels), fully keyboard driven, grouped under each top-level task. Finished subtasks fold into a "✓ N done" line so the plan shows what's left; Undo is one click away. Progress rolls up from leaves. Finishing a task suggests what's next; finishing the last child offers to close the parent. Paste a bulleted plan from any AI chat and it becomes a task tree. |
 | **Milestones** | Flag any task (`m`). Flagged tasks show their progress right in the plan, so the big picture survives while you're deep in a leaf. |
-| **Decisions** | Select text in any AI reply or page → right-click → **Pin to OrionHUD as a decision**. Itemized and append-only on purpose. |
+| **Decisions** | Select text in any AI reply or page → right-click → **Orion Waypoint › Pin as a decision**. Itemized and append-only on purpose. |
 | **Inbox** | `Alt+Shift+Q` on any page parks a side quest without leaving your task. Triage later into a task or subtask. |
 | **Handoff brief** | `c` (or Copy brief) puts a compact Markdown context block on your clipboard: path, milestone, progress, next step, decisions, open subtasks, links. Paste it into Claude, ChatGPT, Cursor, anything. |
 | **Timebox & distraction guard** | Optional per task timer; optional nudge after a grace period on sites you list. |
@@ -30,9 +34,25 @@ npm install
 npm run build
 ```
 
-Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and pick the `dist/` folder. Pin the toolbar icon; clicking it opens the side panel. Requires Chrome 116+.
+Then open your browser's extensions page (`chrome://extensions`, `edge://extensions`, …), enable **Developer mode**, click **Load unpacked**, and pick the `dist/` folder. Pin the toolbar icon; clicking it opens Orion Waypoint. Requires Chromium 116+.
 
 Optional: Settings → **Turn on tab memory** to let save points remember tabs (see Permissions).
+
+## Supported browsers
+
+One build for every Chromium browser, built for the Chrome Web Store (listing in progress), which Edge, Brave, Opera, Vivaldi and Arc can all install from. Where a browser has no side panel, the same panel opens as a small window beside your browser window. Rows marked † describe expected behaviour that is checked by hand on that browser before each release (see `docs/IMPLEMENTATION_PLAN.md`).
+
+| Browser | Opens as | Notes |
+|---|---|---|
+| Chrome 116+ | Side panel | |
+| Microsoft Edge † | Side panel (Edge sidebar) | |
+| Brave † | Side panel | |
+| Opera † | Side panel, or window | Install Opera's "Install Chrome Extensions" add-on first. If the panel doesn't appear, use the window (below). |
+| Vivaldi † | Side panel or window | Vivaldi's side panel support is partial; the window always works. |
+| Arc † | Window | Arc has no side panel API. |
+| Firefox, Safari | Not supported yet | Firefox needs its own build (`sidebar_action`); planned after launch. |
+
+Open the window anywhere with `Alt+Shift+O`, or right-click the toolbar icon → **Open in its own window**. Features a browser lacks switch off on their own (no idle detection → no auto save point when you step away); the rest keeps working.
 
 ## Agent bridge (Claude Code, Cursor)
 
@@ -41,8 +61,8 @@ A small local helper (`bridge/`, Node 18+, no dependencies) that gives coding ag
 Setup, once:
 
 1. Build: `npm install` then `npm run build` (this also builds `bridge/dist/orion-bridge.mjs`). Reload the extension on `chrome://extensions`.
-2. In the side panel: **Settings → Agent bridge → Turn on agent bridge**. Chrome asks to "Communicate with cooperating native applications".
-3. Click **Copy install command** and run it in a terminal in the OrionHUD folder. It looks like this, with your extension's ID:
+2. In Orion Waypoint: **Settings → Agent bridge → Turn on agent bridge**. Chrome asks to "Communicate with cooperating native applications".
+3. Click **Copy install command** and run it in a terminal in this repository's folder. It looks like this, with your extension's ID:
 
    ```powershell
    npx --yes --package=./bridge orionhud-bridge install --extension-id abcdefghijklmnopabcdefghijklmnop
@@ -63,7 +83,9 @@ Other commands: `npx --package=./bridge orionhud-bridge status` (what's installe
 Notes:
 
 - An unpacked extension's ID depends on the folder you loaded it from. If you move `dist/`, Settings says the bridge is installed for a different extension ID: run the install command again.
-- While the bridge is on, Chrome keeps OrionHUD's background worker running so it can answer. Turn the bridge off in Settings to stop it.
+- While the bridge is on, Chrome keeps Orion Waypoint's background worker running so it can answer. Turn the bridge off in Settings to stop it.
+- The bridge registers with Google Chrome only for now (its native-messaging host location); other Chromium browsers can run the extension without it.
+- The bridge's command, MCP server name and install folders still say `orionhud` (`orionhud-bridge`, `com.orionhud.bridge`, `%LOCALAPPDATA%\OrionHUD\bridge`): they predate the rename and are unchanged for now.
 - Don't run `npx orionhud-bridge` from the npm registry: this project hasn't published that name. Always use `--package=./bridge`.
 - Security design: [docs/bridge-threat-model.md](docs/bridge-threat-model.md).
 
@@ -76,7 +98,7 @@ Notes:
 | `alarms` | Timeboxes, rolling tab snapshot | none |
 | `idle` | Auto save point when you step away | none |
 | `activeTab`, `scripting` | Show the capture box on the tab where you pressed the shortcut, nowhere else | none |
-| `contextMenus` | "Pin as decision" / "Send to inbox" on selected text | none |
+| `contextMenus` | "Pin as a decision" / "Send to inbox" on selected text | none |
 | `notifications` | Timebox ended, confirmations | none |
 | `tabGroups` | Reopen a task's tabs as one named group | none |
 | `tabs` (**optional**, asked when you turn on tab memory) | Read tab URLs/titles for save points and the distraction guard | "Read your browsing history" |
@@ -128,7 +150,11 @@ npm test
 npm run build
 npm run test:e2e
 npm run harness
+npm run icons
+npm run icons:check
 ```
+
+`npm run icons` regenerates `icons/*.png` from `icons/src/*.svg`: the toolbar and store icons (16/32/48/128) and the notification icon `public/icons/notify96.png` (the 128 art cropped to its 96×96 artwork, so notifications show it full size; `public/` is copied to the `dist/` root in build and dev). `npm run icons:check` renders them in memory and fails if a committed PNG is stale (pixels compared with a ±2 tolerance; writes nothing). `npm test` runs it afterwards as a `posttest` step, so `npm test -- test/foo.test.ts` still targets one file. Both icon scripts need the `@resvg/resvg-js` native binary, which `npm install` provides.
 
 `npm run test:e2e` builds, then drives the built extension in Playwright's Chromium (first time: `npx playwright install chromium`). Each test gets a fresh browser profile.
 
@@ -137,7 +163,7 @@ npm run harness
 
   What the bridge test touches: bridge files go to a temporary folder, but on Windows Chrome only looks in the registry, so the test writes `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.orionhud.bridge`. Any existing value is saved first and restored afterwards. The extension copy used by this test has `nativeMessaging` granted up front, because automation can't click Chrome's permission prompt. That prompt is the one step still covered only by the manual checklist below.
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm run typecheck`, `npm test` and `npm run build` on Node 22 (pinned in [`.nvmrc`](.nvmrc); `package.json` `engines` requires `>=22.13.0`) for every pull request and every push to `main`, then checks that `dist/manifest.json` exists and that `dist/capture.js` is a self-contained script with no `import`.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm run typecheck`, `npm test` (including the icon check) and `npm run build` on Node 22 (pinned in [`.nvmrc`](.nvmrc); `package.json` `engines` requires `>=22.13.0`) for every pull request and every push to `main`, then checks that `dist/manifest.json` exists and that `dist/capture.js` is a self-contained script with no `import`.
 
 `npm run harness` serves the real side panel at `http://localhost:5199` with a `chrome.*` shim. Open `/?reset&seed` for demo data (a task you "left" 42 minutes ago). The shim and seed live in `dev/` and are never bundled into `dist/`.
 
@@ -150,8 +176,8 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm 
 5. Lock the screen for 5+ min (or `chrome://extensions` → service worker → run `chrome.idle` test); reopen panel: welcome card, ↩ badge on icon.
 6. Reopen tabs → a purple group named after the task.
 7. `Alt+Shift+S` on a normal page: capture box appears, Enter saves. On `chrome://settings`: notification instead.
-8. `Alt+Shift+Q`: inbox item appears with source link.
-9. Select text → right-click → Pin as decision; appears under Decisions with "source".
+8. `Alt+Shift+Q`: inbox item appears with source link. `Alt+Shift+O`, and right-click toolbar icon → Open in its own window: one panel window opens at the right edge; repeating focuses it.
+9. Select text → right-click → Orion Waypoint › Pin as a decision; appears under Decisions with "source".
 10. Copy brief → paste into a chat; Markdown is intact.
 11. Export backup, delete the workflow, import the backup; everything returns (tasks come back paused).
 12. Quit Chrome with tab memory on, restart: "browser restarted" save point with tabs.
@@ -163,14 +189,14 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm 
 3. Run the copied command in the repo folder. It prints the manifest path and a `claude mcp add …` line. Click **Check again** → **Connected · bridge 0.3.0**.
 4. `npx --package=./bridge orionhud-bridge status` → "Chrome is connected (host running)".
 5. Run the printed `claude mcp add …` line. In a new Claude Code session, `/mcp` lists **orionhud** as connected with 5 tools.
-6. In the panel, create a task with two subtasks and start it (`.`). Ask Claude Code: "Use OrionHUD to get my current task." It calls `get_current_task`; the text matches **Copy brief**.
+6. In the panel, create a task with two subtasks and start it (`.`). Ask Claude Code: "Use Orion Waypoint to get my current task." It calls `get_current_task`; the text matches **Copy brief**.
 7. Ask: "List my open subtasks, then complete the first one." It calls `list_open_subtasks` then `complete_task`. **With the side panel open, the subtask shows as done within a second, without reloading**, and progress rolls up.
 8. Ask it to "log a decision: use exponential backoff". It appears under Decisions on the task.
 9. Ask it to add a subtask. It appears under the current task.
 10. Ask it to complete a task in a different branch (give it that task's title). It gets a scope error; that task is unchanged.
 11. Ask it to complete the parent while a child is still open: "still open" error; nothing changes.
 12. Pause the workflow in the panel. `get_current_task` now says no task is active.
-13. Quit Chrome. The next tool call says OrionHUD isn't reachable, without hanging. Reopen Chrome: Settings shows Connected again by itself, and tools work.
+13. Quit Chrome. The next tool call says Orion Waypoint isn't reachable, without hanging. Reopen Chrome: Settings shows Connected again by itself, and tools work.
 14. Reload the extension on `chrome://extensions`; tools keep working without restarting Claude Code.
 15. Settings → **Turn off agent bridge**: status off, tools report unreachable, `status` says Chrome isn't connected.
 16. `… orionhud-bridge uninstall`: the manifest/registry key and the per-user folder are gone; turning the bridge back on shows "not installed".
@@ -181,4 +207,4 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm 
 - On-device summaries of long AI threads via Chrome's Summarizer API where hardware allows.
 - Chrome Web Store listing (privacy policy is ready in `PRIVACY.md`).
 
-Not planned: cloud sync, accounts, Firefox.
+Not planned: cloud sync, accounts. Firefox: after launch, as a separate build.

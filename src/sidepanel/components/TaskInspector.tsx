@@ -3,7 +3,7 @@ import type { ITaskNode, IWorkflowState } from "../../shared/types";
 import { addNote, deleteNote, restoreNote, setTaskTimer, toggleMilestone } from "../../shared/workflowActions";
 import { restoreTabs } from "../../platform/tabs";
 import { copyBrief, type Ui } from "../lib/ui";
-import { formatAgo, formatMinutes } from "../lib/format";
+import { countLabel, formatAgo, formatMinutes } from "../lib/format";
 
 const TIMEBOXES = [0, 15, 25, 45, 60, 90];
 
@@ -146,8 +146,8 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
                 </div>
                 {s.nextStep && <div className="timeline-step">→ {s.nextStep}</div>}
                 {s.tabs.length > 0 && (
-                  <button className="link-btn" onClick={() => void ui.run(() => restoreTabs(s.tabs, task.title), `Reopened ${s.tabs.length} tabs.`)}>
-                    Reopen {s.tabs.length} tab{s.tabs.length === 1 ? "" : "s"}
+                  <button className="link-btn" onClick={() => void ui.run(() => restoreTabs(s.tabs, task.title), `Reopened ${countLabel(s.tabs.length, "tab")}.`)}>
+                    Reopen {countLabel(s.tabs.length, "tab")}
                   </button>
                 )}
               </li>

@@ -27,7 +27,7 @@ export interface HostManifest {
 export function buildHostManifest(launcherPath: string, extensionId: string): HostManifest {
   return {
     name: BRIDGE_HOST_NAME,
-    description: "OrionHUD agent bridge",
+    description: "Orion Waypoint agent bridge",
     path: launcherPath,
     type: "stdio",
     allowed_origins: [extensionOrigin(extensionId)],
@@ -99,7 +99,7 @@ export async function install(extensionIdRaw: string | undefined, deps: InstallD
   const id = parseExtensionId(extensionIdRaw);
   if (!id) {
     throw new Error(
-      "Pass --extension-id with OrionHUD's 32-letter ID (Settings → Agent bridge shows the exact command, or see chrome://extensions)."
+      "Pass --extension-id with Orion Waypoint's 32-letter ID (Settings → Agent bridge shows the exact command, or see chrome://extensions)."
     );
   }
   const files = bridgeFiles(deps.platform);
@@ -141,7 +141,7 @@ export function nextSteps(files: BridgeFiles, nodePath: string): string {
   const cursor = JSON.stringify({ mcpServers: { orionhud: { command, args } } }, null, 2);
   return [
     "Next:",
-    "  1. In OrionHUD → Settings → Agent bridge, click “Check again”. It should say Connected.",
+    "  1. In Orion Waypoint → Settings → Agent bridge, click “Check again”. It should say Connected.",
     "  2. Connect your agent.",
     "",
     "     Claude Code:",

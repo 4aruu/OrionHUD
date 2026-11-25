@@ -1,0 +1,90 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { APP_NAME } from "../src/shared/brand";
+import { createMenus } from "../src/background/menus";
+import { backupFileName } from "../src/sidepanel/lib/format";
+
+const sources = import.meta.glob(["../src/**/*.{ts,tsx,css,html}"], { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+
+// Every spelling of the old name: OrionHUD, Orion HUD, orion-hud, orion_hud, orionhud, ...
+const OLD_NAME = /orion[\s_-]?hud/i;
+
+// Exact lines allowed to keep the old name: frozen internal identifiers that users never see.
+const ALLOWED = new Set([
+  'const BACKUP_APP = "OrionHUD";', // backup file marker: old backups must keep importing
+  'const DB_NAME = "orion-hud";', // IndexedDB name: updating users keep their data
+  'const HOST_ID = "orionhud-capture-host";', // capture box host element id (internal DOM id)
+  // Agent bridge (v0.3) identifiers, shared with bridge/ and already in installed host manifests/registry keys.
+  'export const BRIDGE_HOST_NAME = "com.orionhud.bridge";', // native-messaging host name
+  "return `npx --yes --package=./bridge orionhud-bridge install --extension-id ${extensionId}`;", // bridge CLI package name
+]);
+
+describe("brand", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("APP_NAME is Orion Waypoint", () => {
+    expect(APP_NAME).toBe("Orion Waypoint");
+  });
+
+  it("no source file shows the old name outside the frozen identifiers", () => {
+    const hits = Object.entries(sources).flatMap(([file, text]) =>
+      text.split("\n").map((line, i) => ({ file, n: i + 1, line: line.trim() }))
+        .filter(({ line }) => OLD_NAME.test(line) && !ALLOWED.has(line)));
+    expect(hits).toEqual([]);
+  });
+
+  it("the old-name scan catches every spelling", () => {
+    for (const s of ["OrionHUD", "Orion HUD", "orion-hud", "orion_hud", "orionhud", "ORIONHUD"]) {
+      expect(OLD_NAME.test(s), s).toBe(true);
+    }
+  });
+
+  it("backups export as orion-waypoint-backup-YYYY-MM-DD.json", () => {
+    expect(backupFileName(new Date("2026-11-24T15:30:00Z"))).toBe("orion-waypoint-backup-2026-11-24.json");
+    expect(backupFileName(new Date())).toMatch(/^orion-waypoint-backup-\d{4}-\d{2}-\d{2}\.json$/);
+  });
+
+  it("the brand name never breaks across lines", () => {
+    // Side panel: running text uses <BrandName />, never a bare {APP_NAME} (template literals like `${APP_NAME}` are fine).
+    const bare = Object.entries(sources)
+      .filter(([file]) => file.startsWith("../src/sidepanel/") && file.endsWith(".tsx") && !file.endsWith("/BrandName.tsx"))
+      .filter(([, text]) => /(?<!\$)\{APP_NAME\}/.test(text))
+      .map(([file]) => file);
+    expect(bare).toEqual([]);
+    expect(sources["../src/sidepanel/index.css"]).toContain(".brand-name { white-space: nowrap; }");
+    // Capture box: the brand span in the hint row.
+    expect(sources["../src/content/capture.ts"]).toContain(".hint .brand { white-space: nowrap; }");
+    expect(sources["../src/content/capture.ts"]).toContain('el("span", "brand", APP_NAME)');
+  });
+
+  it("storage name is frozen so updating users keep their data", () => {
+    expect(sources["../src/shared/db.ts"]).toContain('const DB_NAME = "orion-hud";');
+  });
+
+  it("backup marker is frozen so old backups keep importing", () => {
+    expect(sources["../src/shared/workflowActions.ts"]).toContain('const BACKUP_APP = "OrionHUD";');
+  });
+
+  it("context menu labels do not repeat the brand (Chrome nests them under it)", () => {
+    const create = vi.fn();
+    vi.stubGlobal("chrome", { contextMenus: { removeAll: (cb: () => void) => cb(), create } });
+    createMenus();
+    expect(create.mock.calls.map(([o]) => [o.title, o.contexts])).toEqual([
+      ["Pin as a decision", ["selection"]],
+      ["Send to inbox", ["selection"]],
+      // Right-click the toolbar icon: the escape hatch where the side panel is missing or misbehaves.
+      ["Open in its own window", ["action"]],
+    ]);
+  });
+
+  it("user-facing copy never assumes Chrome or a side panel (works in every Chromium browser)", () => {
+    const isComment = (line: string) => /^\s*(\/\/|\*|\/\*)/.test(line);
+    const hits = Object.entries(sources)
+      .filter(([file]) => /\.(ts|tsx)$/.test(file))
+      .flatMap(([file, text]) =>
+        text.split("\n").map((line, i) => ({ file, n: i + 1, line: line.trim() }))
+          .filter(({ line }) => !isComment(line) && /side panel|chrome doesn't|chrome will|in chrome\b/i.test(line)));
+    expect(hits).toEqual([]);
+  });
+});

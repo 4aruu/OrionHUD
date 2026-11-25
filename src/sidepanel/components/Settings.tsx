@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
+import { backupFileName, countLabel } from "../lib/format";
 import type { Ui } from "../lib/ui";
+import { BrandName } from "./BrandName";
 import { BridgeSettings } from "./BridgeSettings";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { walk } from "../../shared/taskTree";
@@ -47,7 +49,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
     const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `orionhud-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = backupFileName(new Date());
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -59,7 +61,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
     }
     const text = await file.text();
     const r = await ui.run(() => importBackup(text));
-    if (r) ui.toast({ kind: "info", text: `Imported ${r.imported} workflow${r.imported === 1 ? "" : "s"}.` });
+    if (r) ui.toast({ kind: "info", text: `Imported ${countLabel(r.imported, "workflow")}.` });
   }
 
   return (
@@ -77,7 +79,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
         <h3>Tab memory</h3>
         <p className="muted">
           Save points remember the tabs and AI threads you had open for each task, so “Reopen tabs” brings them all back. Also powers the distraction guard.
-          Chrome will describe this as “Read your browsing history”. Tab addresses stay on this computer, never uploaded.
+          Your browser will describe this as “Read your browsing history”. Tab addresses stay on this computer, never uploaded.
         </p>
         <button className={`btn ${tabsOn ? "btn-ghost" : "btn-primary"}`} onClick={toggleTabs} disabled={tabsOn === null}>
           {tabsOn ? "Turn off tab memory" : "Turn on tab memory"}
@@ -95,7 +97,10 @@ export function Settings({ workflows, ui, onBack }: Props) {
           <li>
             <kbd>Alt+Shift+Q</kbd> capture a side quest
           </li>
-          <li>Right-click selected text → pin as decision</li>
+          <li>
+            <kbd>Alt+Shift+O</kbd> open <BrandName /> in its own window
+          </li>
+          <li>Right-click selected text → <BrandName /> › Pin as a decision</li>
         </ul>
         <button className="btn btn-ghost btn-sm" onClick={() => void chrome.tabs.create({ url: "chrome://extensions/shortcuts" })}>
           Change shortcuts
@@ -156,13 +161,13 @@ export function Settings({ workflows, ui, onBack }: Props) {
           }}
         >
           <p>
-            {taskCount(pendingDelete) === 1 ? "Its 1 task" : `Its ${taskCount(pendingDelete)} tasks`}, notes, decisions and save points are removed from this browser. This can't be undone; export a
+            Its {countLabel(taskCount(pendingDelete), "task")}, notes, decisions and save points are removed from this browser. This can't be undone; export a
             backup first if you might need them.
           </p>
         </ConfirmDialog>
       )}
 
-      <p className="muted small pad">OrionHUD {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
+      <p className="muted small pad"><BrandName /> {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
     </div>
   );
 }

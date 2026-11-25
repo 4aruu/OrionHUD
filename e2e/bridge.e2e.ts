@@ -387,7 +387,7 @@ test("an agent reads the brief and checks off a subtask; the side panel updates 
     ext = undefined;
     const gone = await mcp.call("get_current_task");
     expect(gone.isError).toBe(true);
-    expect(text(gone)).toContain("OrionHUD isn't reachable");
+    expect(text(gone)).toContain("Orion Waypoint isn't reachable");
   } finally {
     await mcp?.close().catch(() => undefined);
     await ext?.close().catch(() => undefined);

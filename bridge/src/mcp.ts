@@ -63,9 +63,9 @@ export async function handleRpc(msg: unknown, call: CallBridge): Promise<unknown
       return ok({
         protocolVersion: negotiateVersion(params["protocolVersion"]),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "orionhud", title: "OrionHUD", version: BRIDGE_VERSION },
+        serverInfo: { name: "orionhud", title: "Orion Waypoint", version: BRIDGE_VERSION },
         instructions:
-          "OrionHUD holds the user's plan. Call get_current_task at the start to learn what they're working on. Check off subtasks with complete_task and record decisions with log_decision as you go.",
+          "Orion Waypoint holds the user's plan. Call get_current_task at the start to learn what they're working on. Check off subtasks with complete_task and record decisions with log_decision as you go.",
       });
     case "ping":
       return ok({});

@@ -22,7 +22,7 @@ export const TOOLS: ToolDef[] = [
     name: "get_current_task",
     title: "Get current task",
     description:
-      "Handoff brief (Markdown) for the task the user is working on in OrionHUD: path, milestone, progress, next step, decisions, open subtasks, links. Call this first.",
+      "Handoff brief (Markdown) for the task the user is working on in Orion Waypoint: path, milestone, progress, next step, decisions, open subtasks, links. Call this first.",
     inputSchema: none,
     annotations: readOnly,
   },

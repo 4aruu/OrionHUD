@@ -101,7 +101,7 @@ export async function startHost(opts: HostOptions): Promise<RunningHost> {
     const hostId = nextId;
     nextId = nextId >= BRIDGE_LIMITS.maxRequestId ? 1 : nextId + 1;
     const timer = setTimeout(
-      () => settle(hostId, (id) => errorResponse(id, "timeout", "OrionHUD didn't answer in time. Is Chrome busy or asleep?")),
+      () => settle(hostId, (id) => errorResponse(id, "timeout", "Orion Waypoint didn't answer in time. Is Chrome busy or asleep?")),
       requestTimeoutMs
     );
     client.inflight++;
@@ -166,7 +166,7 @@ export async function startHost(opts: HostOptions): Promise<RunningHost> {
   const close = async () => {
     if (closed) return done;
     closed = true;
-    for (const [hostId] of pending) settle(hostId, (id) => errorResponse(id, "unavailable", "OrionHUD closed the bridge."));
+    for (const [hostId] of pending) settle(hostId, (id) => errorResponse(id, "unavailable", "Orion Waypoint closed the bridge."));
     for (const c of clients) c.socket.destroy();
     await new Promise<void>((r) => server.close(() => r()));
     resolveDone();
@@ -230,7 +230,7 @@ async function listen(path: string, onClient: (s: Socket) => void, log: (l: stri
         await unlink(path).catch(() => undefined); // stale socket file from a crash
         continue;
       }
-      if (attempt >= 10) throw new Error("Another OrionHUD bridge host is already running (another Chrome profile?).");
+      if (attempt >= 10) throw new Error("Another Orion Waypoint bridge host is already running (another Chrome profile?).");
       await new Promise((r) => setTimeout(r, 200));
     }
   }
@@ -249,7 +249,7 @@ export async function runNativeHost(args: string[]): Promise<number> {
   // already enforces this; checking again costs nothing.
   const origin = args.find((a) => a.startsWith("chrome-extension://"));
   if (origin !== extensionOrigin(config.extensionId)) {
-    log("refusing a caller that isn't the installed OrionHUD extension");
+    log("refusing a caller that isn't the installed Orion Waypoint extension");
     return 1;
   }
 

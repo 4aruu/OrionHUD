@@ -171,7 +171,7 @@ test("backup: export, delete, import brings the workflow back", async ({ panel }
   const downloadP = panel.waitForEvent("download");
   await panel.getByRole("button", { name: "Export backup" }).click();
   const download = await downloadP;
-  expect(download.suggestedFilename()).toMatch(/^orionhud-backup-\d{4}-\d{2}-\d{2}\.json$/);
+  expect(download.suggestedFilename()).toMatch(/^orion-waypoint-backup-\d{4}-\d{2}-\d{2}\.json$/);
   const file = info.outputPath("backup.json");
   await download.saveAs(file);
   const json = await readFile(file, "utf8");

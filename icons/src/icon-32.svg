@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset=".5" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <clipPath id="t"><rect width="32" height="32" rx="7"/></clipPath>
+    <filter id="b4" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#0e1330"/>
+  <g clip-path="url(#t)">
+    <circle cx="6" cy="26" r="10" fill="#4f46e5" opacity=".85" filter="url(#b4)"/>
+    <circle cx="21" cy="11" r="8" fill="#f5a524" opacity=".5" filter="url(#b4)"/>
+    <rect width="32" height="32" fill="#fff" opacity=".07"/>
+  </g>
+  <circle cx="6.5" cy="25.5" r="1.9" fill="#fff" opacity=".7"/>
+  <circle cx="7" cy="19.5" r="2.1" fill="#fff" opacity=".82"/>
+  <circle cx="10.5" cy="14.5" r="2.3" fill="#fff" opacity=".95"/>
+  <path d="M21 3.5Q21 11 28.5 11Q21 11 21 18.5Q21 11 13.5 11Q21 11 21 3.5Z" fill="#fffaf0"/>
+  <rect x=".375" y=".375" width="31.25" height="31.25" rx="6.625" fill="none" stroke="url(#rim)" stroke-width=".75"/>
+</svg>

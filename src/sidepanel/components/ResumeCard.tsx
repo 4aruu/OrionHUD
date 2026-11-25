@@ -6,7 +6,7 @@ import { markResumeShown, recordSavePoint } from "../../shared/workflowActions";
 import { validateNextStep } from "../../shared/validators";
 import { restoreTabs } from "../../platform/tabs";
 import { clearResumeBadge, copyBrief, type Ui } from "../lib/ui";
-import { formatAgo, formatCountdown } from "../lib/format";
+import { countLabel, formatAgo, formatCountdown } from "../lib/format";
 
 interface Props {
   workflow: IWorkflowState;
@@ -32,10 +32,6 @@ const TRIGGER_TEXT: Record<string, string> = {
   manual: "with a manual save",
   complete: "when you finished",
 };
-
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
 
 /**
  * The "Now" strip pinned above the plan: the task you're on, the one next
@@ -183,7 +179,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
           )}
           {task.subTasks.length > 0 && (
             <span>
-              {progress.done} of {progress.total} subtasks done
+              {progress.done} of {countLabel(progress.total, "subtask")} done
             </span>
           )}
           {tabs.length > 0 && (
@@ -195,10 +191,10 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
                   await markResumeShown();
                   await clearResumeBadge();
                   return n;
-                }, `Reopened ${plural(tabs.length, "tab")} as a group.`)
+                }, `Reopened ${countLabel(tabs.length, "tab")} as a group.`)
               }
             >
-              Reopen {plural(tabs.length, "tab")}
+              Reopen {countLabel(tabs.length, "tab")}
               {aiVendors.length ? `, incl. ${aiVendors.join(" and ")}` : ""}
             </button>
           )}

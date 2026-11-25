@@ -255,6 +255,7 @@ describe("workflow orchestration", () => {
 
     await expect(importBackup("{nope")).rejects.toMatchObject({ code: "invalid-backup" });
     await expect(importBackup(JSON.stringify({ app: "Other", workflows: [] }))).rejects.toMatchObject({ code: "invalid-backup" });
+    await expect(importBackup(JSON.stringify({ app: "Other", workflows: [] }))).rejects.toThrow("That file isn't an Orion Waypoint backup.");
     const bad = JSON.stringify({ app: "OrionHUD", workflows: [{ id: "new-1", name: "ok", globalGracePeriodMins: 5 }, { id: "x" }] });
     await expect(importBackup(bad)).rejects.toMatchObject({ code: "invalid-backup" });
     expect(await getWorkflow("new-1")).toBeUndefined();
@@ -263,6 +264,9 @@ describe("workflow orchestration", () => {
     const r = await importBackup(json);
     expect(r.imported).toBe(before);
     expect(findTaskNode((await wf(w.id)).rootNodes, t.id)!.status).toBe("PENDING");
+
+    const legacy = JSON.stringify({ app: "OrionHUD", version: 2, workflows: [{ id: "legacy-1", name: "From v0.2", globalGracePeriodMins: 5 }] });
+    await expect(importBackup(legacy)).resolves.toEqual({ imported: 1 });
   });
 
   it("importBackup rejects files over 5 MB", async () => {

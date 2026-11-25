@@ -33,7 +33,7 @@ export function isUrlBlacklisted(
 export type DriftStatus = "on-target" | "drifted" | "unknown";
 
 // "unknown" exists specifically for the case where tab.url is
-// undefined because OrionHUD doesn't currently hold permission to read
+// undefined because Orion Waypoint doesn't currently hold permission to read
 // it (activeTab expired, optional host permission not granted). Callers
 // must NOT collapse "unknown" into "drifted": doing so would nag the
 // user on every ungranted tab regardless of whether they're actually

@@ -12,6 +12,7 @@ import { TaskInspector } from "./TaskInspector";
 import { InboxPanel } from "./InboxPanel";
 import { SwitchPrompt } from "./SwitchPrompt";
 import { ShortcutHelp } from "./ShortcutHelp";
+import { BrandName } from "./BrandName";
 import { completeWithFeedback } from "../lib/complete";
 
 interface Props {
@@ -128,7 +129,7 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
 
       {!activeTask && !resumeTask && workflow.rootNodes.length > 0 && (
         <p className="hint-bar">
-          Hover a task and press ▶ (or select it and press <kbd>.</kbd>) to start. OrionHUD saves your place whenever you switch or step away.
+          Hover a task and press ▶ (or select it and press <kbd>.</kbd>) to start. <BrandName /> saves your place whenever you switch or step away.
         </p>
       )}
 

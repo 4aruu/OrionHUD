@@ -2,6 +2,8 @@
 // panel UI can run in a normal browser tab for visual and keyboard QA.
 // Never bundled into the extension (lives outside src/, own Vite config).
 
+import manifest from "../manifest.json";
+
 type Listener = (...args: unknown[]) => unknown;
 
 const fakeTabs: chrome.tabs.Tab[] = [
@@ -33,7 +35,8 @@ const shim = {
     sendMessage: async (msg: unknown) => {
       messageListeners.forEach((l) => l(msg, { id: "dev-harness" }, () => undefined));
     },
-    getManifest: () => ({ version: "0.2.0-dev" }),
+    // Real version from the manifest, marked as the harness build.
+    getManifest: () => ({ version: `${manifest.version}-dev` }),
     getURL: (p: string) => `/${p}`,
   },
   action: {

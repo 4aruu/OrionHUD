@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { APP_NAME } from "../../shared/brand";
 import { getLiveTabs, getMeta, listWorkflows } from "../../shared/db";
 import { isOwnSender, parseExtensionMessage } from "../../shared/messages";
 import type { IAppMeta, ILiveTabs, IWorkflowState } from "../../shared/types";
@@ -29,7 +30,7 @@ export function useOrion() {
         setLoadError(null);
       }
     } catch (err) {
-      console.error("[OrionHUD] load failed", err);
+      console.error(`[${APP_NAME}] load failed`, err);
       if (mine === seq.current) setLoadError("Couldn't read your saved work. Reload the panel to retry.");
     }
   }, []);

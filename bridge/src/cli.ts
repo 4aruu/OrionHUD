@@ -10,7 +10,7 @@ import { runMcpServer } from "./mcp";
 import { bridgeFiles, currentPlatform } from "./paths";
 import { BRIDGE_VERSION } from "./version";
 
-const HELP = `orionhud-bridge ${BRIDGE_VERSION}: lets coding agents read and update your OrionHUD task tree.
+const HELP = `orionhud-bridge ${BRIDGE_VERSION}: lets coding agents read and update your Orion Waypoint task tree.
 
 Usage:
   orionhud-bridge install --extension-id <id>   register the Chrome native-messaging host (per user)
@@ -57,7 +57,7 @@ async function status(): Promise<number> {
   out.write(
     processAlive(pid)
       ? "Chrome is connected (host running).\n"
-      : "Chrome isn't connected. Open Chrome, then OrionHUD → Settings → Agent bridge.\n"
+      : "Chrome isn't connected. Open Chrome, then Orion Waypoint → Settings → Agent bridge.\n"
   );
   return 0;
 }
@@ -84,7 +84,7 @@ export async function main(argv: string[]): Promise<number> {
         selfPath: fileURLToPath(import.meta.url),
       });
       process.stdout.write(
-        `OrionHUD bridge installed.\n  Allowed extension: ${result.origin}\n  Host manifest:     ${result.files.manifest}\n  Bridge files:      ${result.files.dir}\n\n${nextSteps(result.files, process.execPath)}\n`
+        `Orion Waypoint bridge installed.\n  Allowed extension: ${result.origin}\n  Host manifest:     ${result.files.manifest}\n  Bridge files:      ${result.files.dir}\n\n${nextSteps(result.files, process.execPath)}\n`
       );
       return 0;
     }
