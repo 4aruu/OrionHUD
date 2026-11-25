@@ -30,7 +30,7 @@ export function Toast({ toast, onClose }: { toast: ToastState | null; onClose: (
               {toast.action.label}
             </button>
           )}
-          <button className="icon-btn" aria-label="Dismiss" onClick={onClose}>
+          <button className="icon-btn" aria-label="Dismiss" data-tip="Dismiss" onClick={onClose}>
             ×
           </button>
         </div>

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { ITaskNode, IWorkflowState } from "../../shared/types";
-import { addNote, deleteNote, setTaskTimer, toggleMilestone } from "../../shared/workflowActions";
+import { addNote, deleteNote, restoreNote, setTaskTimer, toggleMilestone } from "../../shared/workflowActions";
 import { restoreTabs } from "../../platform/tabs";
 import { copyBrief, type Ui } from "../lib/ui";
 import { formatAgo, formatMinutes } from "../lib/format";
@@ -22,6 +22,19 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
   const decisions = task.microNotes.filter((n) => n.kind === "decision").reverse();
   const notes = task.microNotes.filter((n) => n.kind === "note").reverse();
 
+  const inputId = useId();
+
+  /** Deletes now, offers Undo in the toast. */
+  async function remove(noteId: string, kind: "note" | "decision") {
+    const removed = await ui.run(() => deleteNote(workflow.id, task.id, noteId));
+    if (!removed) return;
+    ui.toast({
+      kind: "info",
+      text: kind === "decision" ? "Decision deleted." : "Note deleted.",
+      action: { label: "Undo", run: () => void ui.run(() => restoreNote(workflow.id, removed)) },
+    });
+  }
+
   async function submit() {
     const value = text.trim();
     if (!value) return;
@@ -32,7 +45,6 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
   return (
     <section className="inspector" aria-label={`Details for ${task.title}`}>
       <header className="inspector-head">
-        <h3>{task.title}</h3>
         <div className="inspector-tools">
           <label className="select-label">
             <span className="sr-only">Timebox</span>
@@ -67,10 +79,14 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
           void submit();
         }}
       >
+        <label className="field-label" htmlFor={inputId}>
+          {asDecision ? "Add a decision" : "Add a note"}
+        </label>
         <input
+          id={inputId}
           value={text}
           maxLength={500}
-          placeholder={asDecision ? "Record a decision (why, not just what)" : "Quick note, command, or link"}
+          placeholder={asDecision ? "Why, not just what. Enter to save" : "A command, link or reminder. Enter to save"}
           aria-label="Note"
           onChange={(e) => setText(e.target.value)}
         />
@@ -92,7 +108,7 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
                     source
                   </a>
                 )}
-                <button className="icon-btn" aria-label="Delete decision" onClick={() => void ui.run(() => deleteNote(workflow.id, task.id, d.id))}>
+                <button className="icon-btn" aria-label="Delete decision" data-tip="Delete decision" onClick={() => void remove(d.id, "decision")}>
                   ×
                 </button>
               </li>
@@ -109,7 +125,7 @@ export function TaskInspector({ workflow, task, now, ui }: { workflow: IWorkflow
               <li key={n.id} className={`log-item ${n.isActionableCommand ? "log-cmd" : ""}`}>
                 <span>{n.content}</span>
                 <span className="muted small">{formatAgo(now - n.timestamp)}</span>
-                <button className="icon-btn" aria-label="Delete note" onClick={() => void ui.run(() => deleteNote(workflow.id, task.id, n.id))}>
+                <button className="icon-btn" aria-label="Delete note" data-tip="Delete note" onClick={() => void remove(n.id, "note")}>
                   ×
                 </button>
               </li>
