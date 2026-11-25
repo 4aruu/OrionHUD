@@ -18,7 +18,8 @@ import { DIST, ROOT, createWorkflow, expect, openNotes, resumeCard, launchExtens
 
 const BUNDLE = join(ROOT, "bridge", "dist", "orion-bridge.mjs");
 const HOST = "com.orionhud.bridge";
-const REG_KEY = `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST}`;const WRONG_ID = "abcdefghijklmnopabcdefghijklmnop";
+const REG_KEY = `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST}`;
+const WRONG_ID = "abcdefghijklmnopabcdefghijklmnop";
 
 // ---------- sandbox ----------
 
@@ -292,6 +293,9 @@ test("an agent reads the brief and checks off a subtask; the side panel updates 
   let ext: LaunchedExtension | undefined;
   let mcp: McpClient | undefined;
   try {
+    // Start from "nothing installed" even if the real bridge is registered on
+    // this machine; the finally block puts the saved value back.
+    await restoreRegistry(REG_KEY, null);
     ext = await launchExtension(sb.extDir, { env: sb.env });
     const { page: panel, errors } = await openPanel(ext);
 
