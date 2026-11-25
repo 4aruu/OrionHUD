@@ -7,13 +7,13 @@ import { categoryOf } from "../lib/categories";
 import type { Ui } from "../lib/ui";
 import { useNow } from "../hooks/useOrion";
 import { ResumeCard } from "./ResumeCard";
-import { MilestoneStrip } from "./MilestoneStrip";
 import { Outline } from "./Outline";
 import { TaskInspector } from "./TaskInspector";
 import { InboxPanel } from "./InboxPanel";
 import { SwitchPrompt } from "./SwitchPrompt";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { BrandName } from "./BrandName";
+import { completeWithFeedback } from "../lib/complete";
 
 interface Props {
   workflow: IWorkflowState;
@@ -44,6 +44,7 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
   const [focusedId, setFocusedId] = useState<string | null>(activeId ?? workflow.rootNodes[0]?.id ?? null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [help, setHelp] = useState(false);
+  const [drawer, setDrawer] = useState<"notes" | "inbox" | null>(null);
   const now = useNow(1000, Boolean(activeTask?.allocatedTimeMs));
   const focused = focusedId ? findTaskNode(workflow.rootNodes, focusedId) : undefined;
 
@@ -66,8 +67,8 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
   }, []);
 
   const progress = leafProgress(workflow.rootNodes);
-  const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   const cat = categoryOf(workflow.category);
+  const toggleDrawer = (d: "notes" | "inbox") => setDrawer((cur) => (cur === d ? null : d));
 
   function requestSwitch(toId: string | null) {
     if (activeTask && activeTask.id !== toId) setPending({ toId });
@@ -89,33 +90,17 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
   return (
     <div className="workflow">
       <header className="wf-head">
-        <button className="icon-btn" aria-label="All workflows" onClick={onBack}>
+        <button className="icon-btn" aria-label="All workflows" data-tip="All workflows" data-tip-align="start" onClick={onBack}>
           ←
         </button>
         <div className="wf-title">
-          <div className="wf-cat">
-            {cat?.icon} {cat?.label ?? "Workflow"} {isActiveWorkflow && <span className="live-dot" aria-label="active" />}
-          </div>
+          <div className="wf-cat">{cat?.label ?? "Workflow"}</div>
           <h2>{workflow.name}</h2>
         </div>
-        {activeTask ? (
-          <button className="btn btn-ghost btn-sm" onClick={() => requestSwitch(null)}>
-            Pause
-          </button>
-        ) : null}
-        <button className="icon-btn" aria-label="Keyboard shortcuts" title="Shortcuts (?)" onClick={() => setHelp(true)}>
+        <button className="icon-btn" aria-label="Keyboard shortcuts" data-tip="Keyboard shortcuts (?)" onClick={() => setHelp(true)}>
           ?
         </button>
       </header>
-
-      <div className="wf-progress" aria-label={`${progress.done} of ${progress.total} tasks done`}>
-        <span className="bar">
-          <span style={{ width: `${pct}%` }} />
-        </span>
-        <span className="muted small">
-          {progress.done}/{progress.total}
-        </span>
-      </div>
 
       {pending && activeTask && (
         <SwitchPrompt
@@ -137,17 +122,25 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
           ui={ui}
           onResume={(id) => requestSwitch(id)}
           onFocus={setFocusedId}
+          onPause={() => requestSwitch(null)}
+          onDone={() => void completeWithFeedback({ workflow, node: resumeTask, activeId, ui, onStart: requestSwitch })}
         />
       )}
 
       {!activeTask && !resumeTask && workflow.rootNodes.length > 0 && (
         <p className="hint-bar">
-          Pick a task and press <kbd>.</kbd> (or ▶) to start. <BrandName /> saves your place whenever you switch or step away.
+          Hover a task and press ▶ (or select it and press <kbd>.</kbd>) to start. <BrandName /> saves your place whenever you switch or step away.
         </p>
       )}
 
-      <MilestoneStrip roots={workflow.rootNodes} onFocus={setFocusedId} />
-
+      <div className="plan-head">
+        <h3 className="section-label">Plan</h3>
+        {progress.total > 0 && (
+          <span className="plan-count" aria-label={`${progress.done} of ${progress.total} tasks done`}>
+            {progress.done} of {progress.total} done
+          </span>
+        )}
+      </div>
       <Outline
         workflow={workflow}
         activeId={activeId}
@@ -158,9 +151,30 @@ export function WorkflowView({ workflow, meta, live, ui, onBack }: Props) {
         onHelp={() => setHelp(true)}
       />
 
-      {focused && <TaskInspector key={focused.id} workflow={workflow} task={focused} now={now} ui={ui} />}
+      <nav className="drawer-tabs" aria-label="Notes and inbox">
+        {focused && (
+          <button className="drawer-tab" aria-expanded={drawer === "notes"} aria-controls="drawer-notes" onClick={() => toggleDrawer("notes")}>
+            Notes <span className="drawer-n">{focused.microNotes.length}</span>
+          </button>
+        )}
+        <button className="drawer-tab" aria-expanded={drawer === "inbox"} aria-controls="drawer-inbox" onClick={() => toggleDrawer("inbox")}>
+          Inbox <span className="drawer-n">{workflow.inbox.length}</span>
+        </button>
+      </nav>
 
-      <InboxPanel workflow={workflow} focusedId={focusedId} activeId={activeId} now={now} ui={ui} />
+      {drawer === "notes" && focused && (
+        <div id="drawer-notes" className="drawer">
+          <p className="drawer-for">
+            For <strong>{focused.title}</strong>. Pick another task in the plan to see its notes.
+          </p>
+          <TaskInspector key={focused.id} workflow={workflow} task={focused} now={now} ui={ui} />
+        </div>
+      )}
+      {drawer === "inbox" && (
+        <div id="drawer-inbox" className="drawer">
+          <InboxPanel workflow={workflow} focusedId={focusedId} activeId={activeId} now={now} ui={ui} />
+        </div>
+      )}
 
       {help && <ShortcutHelp onClose={() => setHelp(false)} />}
     </div>

@@ -13,6 +13,9 @@ const ALLOWED = new Set([
   'const BACKUP_APP = "OrionHUD";', // backup file marker: old backups must keep importing
   'const DB_NAME = "orion-hud";', // IndexedDB name: updating users keep their data
   'const HOST_ID = "orionhud-capture-host";', // capture box host element id (internal DOM id)
+  // Agent bridge (v0.3) identifiers, shared with bridge/ and already in installed host manifests/registry keys.
+  'export const BRIDGE_HOST_NAME = "com.orionhud.bridge";', // native-messaging host name
+  "return `npx --yes --package=./bridge orionhud-bridge install --extension-id ${extensionId}`;", // bridge CLI package name
 ]);
 
 describe("brand", () => {

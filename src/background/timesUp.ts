@@ -21,8 +21,8 @@ export async function handleTaskAlarm(alarm: chrome.alarms.Alarm): Promise<void>
 
   const message =
     drift === "drifted"
-      ? `Time's up for “${task.title}”, and it looks like you've drifted off it.`
-      : `Time's up for “${task.title}”. Wrap up, or give it more time in ${APP_NAME}.`;
+      ? `The timebox for “${task.title}” has ended, and you're on a different page now. Keep going, or adjust it in ${APP_NAME}.`
+      : `The timebox for “${task.title}” has ended. Keep going, or give it more time in ${APP_NAME}.`;
 
-  await notify(`orion-notif:${task.id}`, `${APP_NAME}: time's up`, message);
+  await notify(`orion-notif:${task.id}`, `${APP_NAME}: timebox ended`, message);
 }

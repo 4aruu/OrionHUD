@@ -12,6 +12,13 @@ const fakeTabs: chrome.tabs.Tab[] = [
 ] as chrome.tabs.Tab[];
 
 let tabsGranted = true;
+let bridgeGranted = false;
+const sessionStore: Record<string, unknown> = {
+  bridgeStatus: { state: "not-installed", detail: null, hostVersion: null, at: Date.now() },
+};
+const storageListeners = new Set<Listener>();
+type PermReq = { permissions?: string[] };
+const isBridge = (p: PermReq) => p.permissions?.includes("nativeMessaging") ?? false;
 let badge = "";
 const messageListeners = new Set<Listener>();
 const log = (...a: unknown[]) => console.info("[chrome-shim]", ...a);
@@ -38,14 +45,32 @@ const shim = {
     setBadgeBackgroundColor: async () => undefined,
   },
   permissions: {
-    contains: async () => tabsGranted,
-    request: async () => {
-      tabsGranted = true;
+    contains: async (p: PermReq) => (isBridge(p) ? bridgeGranted : tabsGranted),
+    request: async (p: PermReq) => {
+      if (isBridge(p)) bridgeGranted = true;
+      else tabsGranted = true;
       return true;
     },
-    remove: async () => {
-      tabsGranted = false;
+    remove: async (p: PermReq) => {
+      if (isBridge(p)) bridgeGranted = false;
+      else tabsGranted = false;
       return true;
+    },
+  },
+  storage: {
+    session: {
+      get: async (key: string) => ({ [key]: sessionStore[key] }),
+      set: async (items: Record<string, unknown>) => {
+        for (const [k, v] of Object.entries(items)) {
+          const oldValue = sessionStore[k];
+          sessionStore[k] = v;
+          storageListeners.forEach((l) => l({ [k]: { oldValue, newValue: v } }, "session"));
+        }
+      },
+    },
+    onChanged: {
+      addListener: (l: Listener) => storageListeners.add(l),
+      removeListener: (l: Listener) => storageListeners.delete(l),
     },
   },
   tabs: {

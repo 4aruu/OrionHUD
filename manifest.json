@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Orion Waypoint",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Saves your tabs, AI chats and next step whenever you get pulled away, so you pick up exactly where you left off.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -16,7 +16,7 @@
     "contextMenus",
     "tabGroups"
   ],
-  "optional_permissions": ["tabs"],
+  "optional_permissions": ["tabs", "nativeMessaging"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },

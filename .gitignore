@@ -3,6 +3,8 @@ dist/
 .vite/
 *.log
 .DS_Store
+test-results/
+playwright-report/
 
 # Brainstorm mockups and plan-execution scratch (local only)
 .superpowers/

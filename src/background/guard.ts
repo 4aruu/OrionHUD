@@ -35,8 +35,8 @@ export async function handleTabChange(url: string | undefined): Promise<void> {
   lastNotifAt.set(workflow.id, now);
   await notify(
     `orion-distraction:${workflow.id}`,
-    `${APP_NAME}: off track`,
-    `More than ${workflow.globalGracePeriodMins} min on a blocked site during “${workflow.name}”.`
+    `Still on “${workflow.name}”?`,
+    `You've spent ${workflow.globalGracePeriodMins} min on a site you asked ${APP_NAME} to watch. Your place is saved whenever you head back.`
   );
   await mutateMeta((m) => ({ ...m, blacklistedSince: null }));
 }

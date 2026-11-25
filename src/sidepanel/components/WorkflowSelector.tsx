@@ -52,7 +52,7 @@ export function WorkflowSelector({ workflows, meta, now, onOpen, onCreate, onSet
     <div className="selector">
       <div className="selector-head">
         <h2>Workflows</h2>
-        <button className="icon-btn" aria-label="Settings" title="Settings" onClick={onSettings}>
+        <button className="icon-btn" aria-label="Settings" data-tip="Settings" onClick={onSettings}>
           ⚙
         </button>
       </div>
@@ -66,18 +66,15 @@ export function WorkflowSelector({ workflows, meta, now, onOpen, onCreate, onSet
           return (
             <li key={wf.id}>
               <button className={`wf-card ${active ? "wf-card-active" : ""}`} onClick={() => onOpen(wf.id)}>
-                <span className="wf-icon" aria-hidden="true">
-                  {cat?.icon ?? "📋"}
-                </span>
                 <span className="wf-body">
                   <span className="wf-name">
-                    {wf.name} {active && <span className="badge-now">active</span>}
+                    {wf.name} {active && <span className="badge-now">Active</span>}
                   </span>
                   <span className="bar" aria-hidden="true">
-                    <span style={{ width: `${pct}%` }} />
+                    <span style={{ transform: `scaleX(${pct / 100})` }} />
                   </span>
                   <span className="muted small">
-                    {p.done}/{p.total} done{saved ? ` · saved ${formatAgo(now - saved)}` : ""}
+                    {cat ? `${cat.label} · ` : ""}{p.done}/{p.total} done{saved ? ` · saved ${formatAgo(now - saved)}` : ""}
                     {wf.inbox.length ? ` · ${wf.inbox.length} in inbox` : ""}
                   </span>
                 </span>

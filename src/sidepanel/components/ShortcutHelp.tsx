@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { APP_NAME } from "../../shared/brand";
+import { useDialog } from "../hooks/useDialog";
 
 const KEYS: [string, string][] = [
   ["↑ ↓", "Move between tasks"],
@@ -26,19 +27,14 @@ const GLOBAL: [string, string][] = [
 
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const ref = useDialog(onClose, closeRef);
 
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet">
+    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div ref={ref} className="sheet" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
         <div className="sheet-head">
           <h3>Keyboard</h3>
-          <button ref={closeRef} className="icon-btn" aria-label="Close" onClick={onClose}>
+          <button ref={closeRef} className="icon-btn" aria-label="Close" data-tip="Close (Esc)" onClick={onClose}>
             ×
           </button>
         </div>

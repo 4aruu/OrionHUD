@@ -483,11 +483,41 @@ export async function addNote(
   return note;
 }
 
-export async function deleteNote(workflowId: string, taskId: string, noteId: string): Promise<void> {
+export interface RemovedNote {
+  taskId: string;
+  note: IMicroNote;
+  index: number;
+}
+
+/** Deletes a note; returns what's needed to undo it (null if it was already gone). */
+export async function deleteNote(workflowId: string, taskId: string, noteId: string): Promise<RemovedNote | null> {
+  let removed: RemovedNote | null = null;
   await mutateWorkflow(workflowId, (s) => ({
     ...s,
-    rootNodes: updateNode(s.rootNodes, taskId, (n) => ({ ...n, microNotes: n.microNotes.filter((x) => x.id !== noteId) })),
+    rootNodes: updateNode(s.rootNodes, taskId, (n) => {
+      const index = n.microNotes.findIndex((x) => x.id === noteId);
+      if (index < 0) return n;
+      removed = { taskId, note: n.microNotes[index]!, index };
+      return { ...n, microNotes: n.microNotes.filter((x) => x.id !== noteId) };
+    }),
   }));
+  return removed;
+}
+
+/** Undo for deleteNote: puts the same note back where it was. */
+export async function restoreNote(workflowId: string, removed: RemovedNote): Promise<void> {
+  await mutateWorkflow(workflowId, (s) => {
+    requireNode(s, removed.taskId);
+    return {
+      ...s,
+      rootNodes: updateNode(s.rootNodes, removed.taskId, (n) => {
+        if (n.microNotes.some((x) => x.id === removed.note.id)) return n;
+        const notes = [...n.microNotes];
+        notes.splice(Math.min(removed.index, notes.length), 0, removed.note);
+        return { ...n, microNotes: notes.slice(-LIMITS.maxNotes) };
+      }),
+    };
+  });
 }
 
 // ─── Inbox (side quests) ───────────────────────────────────────────────────
@@ -514,8 +544,34 @@ export async function addInboxItem(
   return item;
 }
 
-export async function dismissInboxItem(workflowId: string, itemId: string): Promise<void> {
-  await mutateWorkflow(workflowId, (s) => ({ ...s, inbox: s.inbox.filter((i) => i.id !== itemId) }));
+export interface RemovedInboxItem {
+  item: IInboxItem;
+  index: number;
+}
+
+/** Dismisses an inbox item; returns what's needed to undo it (null if it was already gone). */
+export async function dismissInboxItem(workflowId: string, itemId: string): Promise<RemovedInboxItem | null> {
+  let removed: RemovedInboxItem | null = null;
+  await mutateWorkflow(workflowId, (s) => {
+    const index = s.inbox.findIndex((i) => i.id === itemId);
+    if (index < 0) return s;
+    removed = { item: s.inbox[index]!, index };
+    return { ...s, inbox: s.inbox.filter((i) => i.id !== itemId) };
+  });
+  return removed;
+}
+
+/** Undo for dismissInboxItem. */
+export async function restoreInboxItem(workflowId: string, removed: RemovedInboxItem): Promise<void> {
+  await mutateWorkflow(workflowId, (s) => {
+    if (s.inbox.some((i) => i.id === removed.item.id)) return s;
+    if (s.inbox.length >= LIMITS.maxInbox) {
+      throw new OrionError("max-inbox", `Inbox is full (${LIMITS.maxInbox}). Triage a few items first.`);
+    }
+    const inbox = [...s.inbox];
+    inbox.splice(Math.min(removed.index, inbox.length), 0, removed.item);
+    return { ...s, inbox };
+  });
 }
 
 /** Turns an inbox item into a task under parentId (null = top level), atomically. */

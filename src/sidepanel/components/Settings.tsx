@@ -2,9 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
-import { backupFileName } from "../lib/format";
+import { backupFileName, countLabel } from "../lib/format";
 import type { Ui } from "../lib/ui";
 import { BrandName } from "./BrandName";
+import { BridgeSettings } from "./BridgeSettings";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { walk } from "../../shared/taskTree";
+
+function taskCount(w: IWorkflowState): number {
+  let n = 0;
+  walk(w.rootNodes, () => n++);
+  return n;
+}
 
 interface Props {
   workflows: IWorkflowState[];
@@ -16,6 +25,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
   const [tabsOn, setTabsOn] = useState<boolean | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pendingDelete = workflows.find((w) => w.id === confirmDelete) ?? null;
 
   useEffect(() => {
     void hasTabsPermission().then(setTabsOn);
@@ -51,13 +61,13 @@ export function Settings({ workflows, ui, onBack }: Props) {
     }
     const text = await file.text();
     const r = await ui.run(() => importBackup(text));
-    if (r) ui.toast({ kind: "info", text: `Imported ${r.imported} workflow${r.imported === 1 ? "" : "s"}.` });
+    if (r) ui.toast({ kind: "info", text: `Imported ${countLabel(r.imported, "workflow")}.` });
   }
 
   return (
     <div className="settings">
       <header className="wf-head">
-        <button className="icon-btn" aria-label="Back" onClick={onBack}>
+        <button className="icon-btn" aria-label="Back" data-tip="Back" data-tip-align="start" onClick={onBack}>
           ←
         </button>
         <div className="wf-title">
@@ -75,6 +85,8 @@ export function Settings({ workflows, ui, onBack }: Props) {
           {tabsOn ? "Turn off tab memory" : "Turn on tab memory"}
         </button>
       </section>
+
+      <BridgeSettings ui={ui} />
 
       <section className="card">
         <h3>Shortcuts</h3>
@@ -129,27 +141,30 @@ export function Settings({ workflows, ui, onBack }: Props) {
             {workflows.map((w) => (
               <li key={w.id} className="delete-row">
                 <span>{w.name}</span>
-                {confirmDelete === w.id ? (
-                  <>
-                    <button
-                      className="btn btn-danger btn-xs"
-                      onClick={() => void ui.run(() => deleteWorkflowCascade(w.id), `Deleted “${w.name}”.`).then(() => setConfirmDelete(null))}
-                    >
-                      Delete forever
-                    </button>
-                    <button className="btn btn-ghost btn-xs" onClick={() => setConfirmDelete(null)}>
-                      Keep
-                    </button>
-                  </>
-                ) : (
-                  <button className="btn btn-ghost btn-xs" onClick={() => setConfirmDelete(w.id)}>
-                    Delete…
-                  </button>
-                )}
+                <button className="btn btn-ghost btn-sm" aria-label={`Delete ${w.name}`} onClick={() => setConfirmDelete(w.id)}>
+                  Delete
+                </button>
               </li>
             ))}
           </ul>
         </section>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete workflow “${pendingDelete.name}”?`}
+          confirmLabel="Delete workflow"
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => {
+            setConfirmDelete(null);
+            void ui.run(() => deleteWorkflowCascade(pendingDelete.id), `Deleted “${pendingDelete.name}”.`);
+          }}
+        >
+          <p>
+            Its {countLabel(taskCount(pendingDelete), "task")}, notes, decisions and save points are removed from this browser. This can't be undone; export a
+            backup first if you might need them.
+          </p>
+        </ConfirmDialog>
       )}
 
       <p className="muted small pad"><BrandName /> {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
