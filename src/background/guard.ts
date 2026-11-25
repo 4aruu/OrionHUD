@@ -15,6 +15,9 @@ const NOTIF_COOLDOWN_MS = 5 * 60_000;
 const lastNotifAt = new Map<string, number>();
 
 export async function handleTabChange(url: string | undefined): Promise<void> {
+  // Focusing Orion's own window (window mode) is neither on- nor off-track: ignore it,
+  // so it can't reset the distraction timer.
+  if (url && url.startsWith(chrome.runtime.getURL(""))) return;
   const { meta, workflow } = await getActiveContext();
   if (!workflow || !meta.currentActiveNodeId) return;
 

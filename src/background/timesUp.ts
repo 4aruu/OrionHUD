@@ -4,6 +4,7 @@ import { evaluateDrift } from "../shared/urlMatching";
 import { taskIdFromAlarmName } from "../shared/alarms";
 import { getActiveContext } from "./context";
 import { notify } from "./notify";
+import { activeNormalTab } from "../platform/tabs";
 
 export async function handleTaskAlarm(alarm: chrome.alarms.Alarm): Promise<void> {
   const taskId = taskIdFromAlarmName(alarm.name);
@@ -15,13 +16,13 @@ export async function handleTaskAlarm(alarm: chrome.alarms.Alarm): Promise<void>
   if (!task || task.status !== "ACTIVE") return;
 
   // URL is only readable with the optional tabs permission; "unknown" otherwise.
-  const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  const activeTab = await activeNormalTab();
   const drift = evaluateDrift(activeTab?.url, task.targetUrl);
 
   const message =
     drift === "drifted"
       ? `Time's up for “${task.title}”, and it looks like you've drifted off it.`
-      : `Time's up for “${task.title}”. Wrap up, or give it more time in the side panel.`;
+      : `Time's up for “${task.title}”. Wrap up, or give it more time in ${APP_NAME}.`;
 
   await notify(`orion-notif:${task.id}`, `${APP_NAME}: time's up`, message);
 }

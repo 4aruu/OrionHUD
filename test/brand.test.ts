@@ -67,9 +67,21 @@ describe("brand", () => {
     const create = vi.fn();
     vi.stubGlobal("chrome", { contextMenus: { removeAll: (cb: () => void) => cb(), create } });
     createMenus();
-    expect(create.mock.calls.map(([o]) => o.title)).toEqual([
-      "Pin as a decision",
-      "Send to inbox",
+    expect(create.mock.calls.map(([o]) => [o.title, o.contexts])).toEqual([
+      ["Pin as a decision", ["selection"]],
+      ["Send to inbox", ["selection"]],
+      // Right-click the toolbar icon: the escape hatch where the side panel is missing or misbehaves.
+      ["Open in its own window", ["action"]],
     ]);
+  });
+
+  it("user-facing copy never assumes Chrome or a side panel (works in every Chromium browser)", () => {
+    const isComment = (line: string) => /^\s*(\/\/|\*|\/\*)/.test(line);
+    const hits = Object.entries(sources)
+      .filter(([file]) => /\.(ts|tsx)$/.test(file))
+      .flatMap(([file, text]) =>
+        text.split("\n").map((line, i) => ({ file, n: i + 1, line: line.trim() }))
+          .filter(({ line }) => !isComment(line) && /side panel|chrome doesn't|chrome will|in chrome\b/i.test(line)));
+    expect(hits).toEqual([]);
   });
 });

@@ -69,7 +69,7 @@ export function Settings({ workflows, ui, onBack }: Props) {
         <h3>Tab memory</h3>
         <p className="muted">
           Save points remember the tabs and AI threads you had open for each task, so “Reopen tabs” brings them all back. Also powers the distraction guard.
-          Chrome will describe this as “Read your browsing history”. Tab addresses stay on this computer, never uploaded.
+          Your browser will describe this as “Read your browsing history”. Tab addresses stay on this computer, never uploaded.
         </p>
         <button className={`btn ${tabsOn ? "btn-ghost" : "btn-primary"}`} onClick={toggleTabs} disabled={tabsOn === null}>
           {tabsOn ? "Turn off tab memory" : "Turn on tab memory"}
@@ -84,6 +84,9 @@ export function Settings({ workflows, ui, onBack }: Props) {
           </li>
           <li>
             <kbd>Alt+Shift+Q</kbd> capture a side quest
+          </li>
+          <li>
+            <kbd>Alt+Shift+O</kbd> open <BrandName /> in its own window
           </li>
           <li>Right-click selected text → <BrandName /> › Pin as a decision</li>
         </ul>

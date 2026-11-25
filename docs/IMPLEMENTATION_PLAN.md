@@ -26,6 +26,12 @@ These depend on Chrome itself and can't run in Node or the dev harness; see the 
 - Capture box in a narrow window (brand on one line).
 - Notification shows the full-size icon.
 - An exported backup is named `orion-waypoint-backup-YYYY-MM-DD.json`, and a v0.2 backup imports.
+- Per browser (see README "Supported browsers"): install from `dist/`, then check the toolbar click, `Alt+Shift+O`, and right-click icon → Open in its own window.
+  - Chrome, Edge, Brave, Opera: the click opens the side panel, and not also a window.
+  - Arc: the click opens one window at the right edge; Reopen tabs lands in the browser window, not the Orion window.
+  - Vivaldi: note whether the side panel opens; the window must always work.
+  - Every browser: Settings → Change shortcuts opens that browser's shortcut page; the tab-memory prompt wording matches what the browser shows.
+  - Window mode: a time's-up notification does not claim you drifted just because the Orion window had focus.
 
 ## Before the Web Store submission
 

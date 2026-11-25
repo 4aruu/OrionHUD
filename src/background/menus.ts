@@ -7,14 +7,23 @@ import { addInboxItem, addNote } from "../shared/workflowActions";
 import { LIMITS } from "../shared/validators";
 import { getActiveContext } from "./context";
 import { broadcast, notify } from "./notify";
+import { openPanelWindow } from "./surface";
 
 const MENU_DECISION = "orion-pin-decision";
 const MENU_INBOX = "orion-to-inbox";
+const MENU_WINDOW = "orion-open-window";
 
 export function createMenus(): void {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({ id: MENU_DECISION, title: "Pin as a decision", contexts: ["selection"] });
     chrome.contextMenus.create({ id: MENU_INBOX, title: "Send to inbox", contexts: ["selection"] });
+    // Right-click the toolbar icon. Works in every browser, including where the side panel is missing.
+    // Guarded separately so a browser rejecting the "action" context can't affect the menus above.
+    try {
+      chrome.contextMenus.create({ id: MENU_WINDOW, title: "Open in its own window", contexts: ["action"] });
+    } catch {
+      // Alt+Shift+O still opens the window.
+    }
   });
 }
 
@@ -48,5 +57,8 @@ async function handle(info: chrome.contextMenus.OnClickData): Promise<void> {
 }
 
 export function onMenuClicked(info: chrome.contextMenus.OnClickData): void {
-  if (info.menuItemId === MENU_DECISION || info.menuItemId === MENU_INBOX) void handle(info);
+  if (info.menuItemId === MENU_WINDOW) {
+    void openPanelWindow().catch(() => notify("orion-menu", APP_NAME, `Couldn't open ${APP_NAME}. Try Alt+Shift+O.`));
+  }
+  else if (info.menuItemId === MENU_DECISION || info.menuItemId === MENU_INBOX) void handle(info);
 }

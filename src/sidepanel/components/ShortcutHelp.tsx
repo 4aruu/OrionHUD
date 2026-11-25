@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { APP_NAME } from "../../shared/brand";
 
 const KEYS: [string, string][] = [
   ["↑ ↓", "Move between tasks"],
@@ -19,6 +20,7 @@ const KEYS: [string, string][] = [
 const GLOBAL: [string, string][] = [
   ["Alt+Shift+S", "Save point from any page"],
   ["Alt+Shift+Q", "Capture a side quest from any page"],
+  ["Alt+Shift+O", `Open ${APP_NAME} in its own window`],
   ["Right-click text", "Pin as a decision / Send to inbox"],
 ];
 
@@ -51,7 +53,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </dl>
-        <h4>Anywhere in Chrome</h4>
+        <h4>Anywhere in your browser</h4>
         <dl className="keys">
           {GLOBAL.map(([k, d]) => (
             <div key={k}>

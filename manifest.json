@@ -35,6 +35,10 @@
     "quick-capture": {
       "suggested_key": { "default": "Alt+Shift+Q" },
       "description": "Capture a side quest to the inbox"
+    },
+    "open-window": {
+      "suggested_key": { "default": "Alt+Shift+O" },
+      "description": "Open Orion Waypoint in its own window"
     }
   },
   "action": {

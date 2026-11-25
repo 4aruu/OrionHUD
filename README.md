@@ -33,9 +33,25 @@ npm install
 npm run build
 ```
 
-Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and pick the `dist/` folder. Pin the toolbar icon; clicking it opens the side panel. Requires Chrome 116+.
+Then open your browser's extensions page (`chrome://extensions`, `edge://extensions`, …), enable **Developer mode**, click **Load unpacked**, and pick the `dist/` folder. Pin the toolbar icon; clicking it opens Orion Waypoint. Requires Chromium 116+.
 
 Optional: Settings → **Turn on tab memory** to let save points remember tabs (see Permissions).
+
+## Supported browsers
+
+One build for every Chromium browser, built for the Chrome Web Store (listing in progress), which Edge, Brave, Opera, Vivaldi and Arc can all install from. Where a browser has no side panel, the same panel opens as a small window beside your browser window. Rows marked † describe expected behaviour that is checked by hand on that browser before each release (see `docs/IMPLEMENTATION_PLAN.md`).
+
+| Browser | Opens as | Notes |
+|---|---|---|
+| Chrome 116+ | Side panel | |
+| Microsoft Edge † | Side panel (Edge sidebar) | |
+| Brave † | Side panel | |
+| Opera † | Side panel, or window | Install Opera's "Install Chrome Extensions" add-on first. If the panel doesn't appear, use the window (below). |
+| Vivaldi † | Side panel or window | Vivaldi's side panel support is partial; the window always works. |
+| Arc † | Window | Arc has no side panel API. |
+| Firefox, Safari | Not supported yet | Firefox needs its own build (`sidebar_action`); planned after launch. |
+
+Open the window anywhere with `Alt+Shift+O`, or right-click the toolbar icon → **Open in its own window**. Features a browser lacks switch off on their own (no idle detection → no auto save point when you step away); the rest keeps working.
 
 ## Permissions, and why
 
@@ -105,7 +121,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm 
 5. Lock the screen for 5+ min (or `chrome://extensions` → service worker → run `chrome.idle` test); reopen panel: welcome card, ↩ badge on icon.
 6. Reopen tabs → a purple group named after the task.
 7. `Alt+Shift+S` on a normal page: capture box appears, Enter saves. On `chrome://settings`: notification instead.
-8. `Alt+Shift+Q`: inbox item appears with source link.
+8. `Alt+Shift+Q`: inbox item appears with source link. `Alt+Shift+O`, and right-click toolbar icon → Open in its own window: one panel window opens at the right edge; repeating focuses it.
 9. Select text → right-click → Orion Waypoint › Pin as a decision; appears under Decisions with "source".
 10. Copy brief → paste into a chat; Markdown is intact.
 11. Export backup, delete the workflow, import the backup; everything returns (tasks come back paused).
@@ -117,4 +133,4 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm ci`, `npm 
 - On-device summaries of long AI threads via Chrome's Summarizer API where hardware allows.
 - Chrome Web Store listing (privacy policy is ready in `PRIVACY.md`).
 
-Not planned: cloud sync, accounts, Firefox.
+Not planned: cloud sync, accounts. Firefox: after launch, as a separate build.
