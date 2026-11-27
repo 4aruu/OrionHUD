@@ -18,6 +18,7 @@ let bridgeGranted = false;
 const sessionStore: Record<string, unknown> = {
   bridgeStatus: { state: "not-installed", detail: null, hostVersion: null, at: Date.now() },
 };
+const localStore: Record<string, unknown> = {};
 const storageListeners = new Set<Listener>();
 type PermReq = { permissions?: string[] };
 const isBridge = (p: PermReq) => p.permissions?.includes("nativeMessaging") ?? false;
@@ -61,6 +62,17 @@ const shim = {
     },
   },
   storage: {
+    // Minimal: enough for the Appearance setting (theme preference) in the harness.
+    local: {
+      get: async (key: string) => (key in localStore ? { [key]: localStore[key] } : {}),
+      set: async (items: Record<string, unknown>) => {
+        for (const [k, v] of Object.entries(items)) {
+          const oldValue = localStore[k];
+          localStore[k] = v;
+          storageListeners.forEach((l) => l({ [k]: { oldValue, newValue: v } }, "local"));
+        }
+      },
+    },
     session: {
       get: async (key: string) => ({ [key]: sessionStore[key] }),
       set: async (items: Record<string, unknown>) => {

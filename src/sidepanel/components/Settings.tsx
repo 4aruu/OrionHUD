@@ -10,6 +10,13 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { BusyButton } from "./Buttons";
 import { useBusy } from "../hooks/useBusy";
 import { walk } from "../../shared/taskTree";
+import { applyTheme, readThemePref, writeThemePref, type ThemePref } from "../../shared/theme";
+
+const THEME_CHOICES: { value: ThemePref; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
 
 function taskCount(w: IWorkflowState): number {
   let n = 0;
@@ -25,6 +32,7 @@ interface Props {
 
 export function Settings({ workflows, ui, onBack }: Props) {
   const [tabsOn, setTabsOn] = useState<boolean | null>(null);
+  const [theme, setTheme] = useState<ThemePref>("system");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [exporting, runExport] = useBusy();
@@ -33,7 +41,14 @@ export function Settings({ workflows, ui, onBack }: Props) {
 
   useEffect(() => {
     void hasTabsPermission().then(setTabsOn);
+    void readThemePref().then(setTheme);
   }, []);
+
+  function chooseTheme(pref: ThemePref) {
+    setTheme(pref);
+    applyTheme(pref);
+    void writeThemePref(pref);
+  }
 
   function toggleTabs() {
     if (tabsOn) {
@@ -78,6 +93,24 @@ export function Settings({ workflows, ui, onBack }: Props) {
           <h2>Settings</h2>
         </div>
       </header>
+
+      <section className="card">
+        <h3 id="appearance-h">Appearance</h3>
+        <div className="row-buttons" role="radiogroup" aria-labelledby="appearance-h">
+          {THEME_CHOICES.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              role="radio"
+              aria-checked={theme === c.value}
+              className={`btn btn-ghost btn-sm ${theme === c.value ? "btn-on" : ""}`}
+              onClick={() => chooseTheme(c.value)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section className="card">
         <h3>Tab memory</h3>

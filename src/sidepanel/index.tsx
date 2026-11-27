@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { APP_NAME } from "../shared/brand";
+import "../shared/themeBoot";
+import "../shared/tokens.css";
 import "./index.css";
 import App from "./App";
 
