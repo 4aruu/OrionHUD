@@ -54,7 +54,7 @@ describe("brand", () => {
     expect(bare).toEqual([]);
     expect(sources["../src/sidepanel/index.css"]).toContain(".brand-name { white-space: nowrap; }");
     // Capture box: the brand span in the hint row.
-    expect(sources["../src/content/capture.ts"]).toContain(".hint .brand { white-space: nowrap; }");
+    expect(sources["../src/content/captureConfig.ts"]).toContain(".hint .brand { white-space: nowrap; }");
     expect(sources["../src/content/capture.ts"]).toContain('el("span", "brand", APP_NAME)');
   });
 

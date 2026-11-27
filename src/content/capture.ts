@@ -6,42 +6,16 @@
 // by page CSP), and key events stopped so page shortcuts don't fire.
 
 import { APP_NAME } from "../shared/brand";
-
-type Mode = "save" | "inbox";
-
-interface CaptureConfig {
-  mode: Mode;
-  label: string;
-}
+import { captureStyles, parseCaptureConfig, type CaptureConfig } from "./captureConfig";
 
 const HOST_ID = "orionhud-capture-host";
 
 function readConfig(): CaptureConfig | null {
   const g = globalThis as unknown as { __orionCapture?: unknown };
-  const raw = g.__orionCapture as Partial<CaptureConfig> | undefined;
+  const raw = g.__orionCapture;
   delete g.__orionCapture;
-  if (!raw || (raw.mode !== "save" && raw.mode !== "inbox")) return null;
-  return { mode: raw.mode, label: typeof raw.label === "string" ? raw.label.slice(0, 120) : "" };
+  return parseCaptureConfig(raw);
 }
-
-const STYLES = `
-:host { all: initial; }
-.backdrop { position: fixed; inset: 0; z-index: 2147483647; display: flex; justify-content: center;
-  align-items: flex-start; padding-top: 18vh; background: rgba(5,7,12,.35); }
-.box { width: min(560px, calc(100vw - 32px)); background: #0f121a; color: #f1f5f9;
-  border: 1px solid rgba(99,102,241,.55); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.55);
-  padding: 14px 16px; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-.label { font-size: 11px; font-weight: 600; letter-spacing: .04em; color: #a5b4fc; text-transform: uppercase;
-  margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-input { all: unset; box-sizing: border-box; width: 100%; padding: 10px 12px; border-radius: 8px;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: #f1f5f9; font-size: 14px; }
-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
-.hint { margin-top: 8px; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; gap: 8px; }
-.hint .brand { white-space: nowrap; }
-.hint.ok { color: #34d399; } .hint.err { color: #f87171; }
-@media (prefers-reduced-motion: no-preference) { .box { animation: in 140ms ease-out; }
-  @keyframes in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } } }
-`;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
@@ -58,7 +32,7 @@ function mount(config: CaptureConfig): void {
   host.id = HOST_ID;
   const shadow = host.attachShadow({ mode: "closed" });
   const sheet = new CSSStyleSheet();
-  sheet.replaceSync(STYLES);
+  sheet.replaceSync(captureStyles(config.theme));
   shadow.adoptedStyleSheets = [sheet];
 
   const backdrop = el("div", "backdrop");

@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { onRuntimeMessage } from "../src/background/capture";
+import { onCommand, onRuntimeMessage } from "../src/background/capture";
 import { addTask, createWorkflow, startWorkflow } from "../src/shared/workflowActions";
 import { getWorkflow } from "../src/shared/db";
 
@@ -9,6 +9,8 @@ const OWN_ID = "orion-test-id";
 function installChrome() {
   (globalThis as unknown as { chrome: unknown }).chrome = {
     runtime: { id: OWN_ID, sendMessage: vi.fn(() => Promise.resolve()) },
+    scripting: { executeScript: vi.fn(() => Promise.resolve([])) },
+    storage: { local: { get: vi.fn(() => Promise.resolve({ "orion-theme": "light" })) } },
     alarms: { create: vi.fn(), clear: vi.fn() },
     permissions: { contains: vi.fn(() => Promise.resolve(false)) },
   };
@@ -62,5 +64,19 @@ describe("capture message router (security boundary)", () => {
   it("drops an unsafe source URL but keeps the capture", async () => {
     await call(inboxMsg, { id: OWN_ID, tab: { ...tab, url: "javascript:alert(1)" } });
     expect((await getWorkflow(wfId))?.inbox[0]?.sourceUrl).toBeNull();
+  });
+});
+
+describe("capture box theme hand-off", () => {
+  it("passes the stored theme into the injected config", async () => {
+    installChrome();
+    const wf = await createWorkflow("Theme", 5);
+    const t = await addTask(wf.id, null, "Task");
+    await startWorkflow(wf.id, t.id);
+    onCommand("save-point", tab);
+    const exec = (globalThis as unknown as { chrome: { scripting: { executeScript: ReturnType<typeof vi.fn> } } }).chrome
+      .scripting.executeScript;
+    await vi.waitFor(() => expect(exec).toHaveBeenCalledTimes(2));
+    expect(exec.mock.calls[0]?.[0].args).toEqual(["save", "Save point · Task", "light"]);
   });
 });

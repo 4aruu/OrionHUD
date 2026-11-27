@@ -3,6 +3,7 @@
 // shortcut on (activeTab grant), never auto-injected anywhere.
 
 import { APP_NAME } from "../shared/brand";
+import { readThemePref } from "../shared/theme";
 import { parseExtensionMessage, isOwnSender, type CaptureMode } from "../shared/messages";
 import { addInboxItem, recordSavePoint } from "../shared/workflowActions";
 import { captureTabs } from "../platform/tabs";
@@ -27,14 +28,15 @@ async function openCaptureBox(mode: CaptureMode, tab: chrome.tabs.Tab | undefine
   }
   const label = mode === "save" ? `Save point · ${task?.title ?? ""}` : `Inbox · ${workflow.name}`;
   if (tab?.id === undefined) return;
+  const theme = await readThemePref();
   try {
     // Runs in the extension's isolated world, invisible to the page.
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: (m: string, l: string) => {
-        (globalThis as unknown as { __orionCapture?: unknown }).__orionCapture = { mode: m, label: l };
+      func: (m: string, l: string, t: string) => {
+        (globalThis as unknown as { __orionCapture?: unknown }).__orionCapture = { mode: m, label: l, theme: t };
       },
-      args: [mode, label.slice(0, 120)],
+      args: [mode, label.slice(0, 120), theme],
     });
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: [captureScript] });
   } catch {
