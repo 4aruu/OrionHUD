@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onPinnedChange, readPinned } from "../src/platform/action";
 import { getShortcut } from "../src/platform/commands";
+import { showWelcomeTab } from "../src/platform/welcome";
 
 let warn: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
@@ -73,5 +74,55 @@ describe("getShortcut", () => {
     vi.stubGlobal("chrome", { commands: { getAll: vi.fn(() => Promise.reject(new Error("x"))) } });
     expect(await getShortcut("save-point")).toBeNull();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Orion Waypoint]"), expect.any(Error));
+  });
+});
+
+describe("showWelcomeTab", () => {
+  const URL = "chrome-extension://orion/src/welcome/index.html";
+  function stub(contexts: unknown) {
+    const api = {
+      runtime: { getURL: (p: string) => `chrome-extension://orion/${p}`, getContexts: vi.fn(() => Promise.resolve(contexts)) },
+      tabs: { create: vi.fn(() => Promise.resolve({})), update: vi.fn(() => Promise.resolve({})) },
+      windows: { update: vi.fn(() => Promise.resolve({})) },
+    };
+    vi.stubGlobal("chrome", api);
+    return api;
+  }
+
+  it("focuses the welcome tab that is already open", async () => {
+    const api = stub([{ contextType: "TAB", tabId: 12, windowId: 3, documentUrl: URL }]);
+    await showWelcomeTab();
+    expect(api.runtime.getContexts).toHaveBeenCalledWith({ contextTypes: ["TAB"], documentUrls: [URL] });
+    expect(api.tabs.update).toHaveBeenCalledWith(12, { active: true });
+    expect(api.windows.update).toHaveBeenCalledWith(3, { focused: true });
+    expect(api.tabs.create).not.toHaveBeenCalled();
+  });
+
+  it("opens a new tab when none is open", async () => {
+    const api = stub([]);
+    await showWelcomeTab();
+    expect(api.tabs.create).toHaveBeenCalledWith({ url: URL });
+    expect(api.tabs.update).not.toHaveBeenCalled();
+  });
+
+  it("opens a new tab when getContexts is missing (feature-detected)", async () => {
+    const api = stub([]);
+    delete (api.runtime as { getContexts?: unknown }).getContexts;
+    await showWelcomeTab();
+    expect(api.tabs.create).toHaveBeenCalledWith({ url: URL });
+  });
+
+  it("opens a new tab, with a warning, when getContexts fails", async () => {
+    const api = stub([]);
+    api.runtime.getContexts.mockImplementation(() => Promise.reject(new Error("nope")));
+    await showWelcomeTab();
+    expect(api.tabs.create).toHaveBeenCalledWith({ url: URL });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Orion Waypoint]"), expect.any(Error));
+  });
+
+  it("rejects when the tab can't be opened, so the caller can toast", async () => {
+    const api = stub([]);
+    api.tabs.create.mockImplementation(() => Promise.reject(new Error("closed")));
+    await expect(showWelcomeTab()).rejects.toThrow("closed");
   });
 });

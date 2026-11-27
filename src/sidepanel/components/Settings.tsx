@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { IWorkflowState } from "../../shared/types";
 import { deleteWorkflowCascade, exportBackup } from "../../shared/workflowActions";
-import { WELCOME_PAGE } from "../../shared/pages";
 import { openShortcutSettings } from "../../platform/commands";
+import { showWelcomeTab } from "../../platform/welcome";
 import { importBackupFile } from "../lib/backup";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
 import { backupFileName, countLabel } from "../lib/format";
@@ -13,7 +13,8 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { BusyButton } from "./Buttons";
 import { useBusy } from "../hooks/useBusy";
 import { walk } from "../../shared/taskTree";
-import { applyTheme, readThemePref, writeThemePref, type ThemePref } from "../../shared/theme";
+import { APP_NAME } from "../../shared/brand";
+import { applyTheme, applyThemeChoice, onThemePrefChange, readThemePref, writeThemePref, type ThemePref } from "../../shared/theme";
 
 const THEME_CHOICES: { value: ThemePref; label: string }[] = [
   { value: "system", label: "System" },
@@ -36,6 +37,8 @@ interface Props {
 export function Settings({ workflows, ui, onBack }: Props) {
   const [tabsOn, setTabsOn] = useState<boolean | null>(null);
   const [theme, setTheme] = useState<ThemePref>("system");
+  // Set once the user (or another panel) has chosen, so a slow first read can't undo it.
+  const themeTouched = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [exporting, runExport] = useBusy();
@@ -44,17 +47,28 @@ export function Settings({ workflows, ui, onBack }: Props) {
 
   useEffect(() => {
     void hasTabsPermission().then(setTabsOn);
-    void readThemePref().then(setTheme);
+    void readThemePref().then((pref) => {
+      if (!themeTouched.current) setTheme(pref);
+    });
+    // Follow a choice made in another panel or window.
+    return onThemePrefChange((pref) => {
+      themeTouched.current = true;
+      setTheme(pref);
+    });
   }, []);
 
   function chooseTheme(pref: ThemePref) {
-    const previous = theme;
-    setTheme(pref);
-    applyTheme(pref);
-    writeThemePref(pref).catch(() => {
-      setTheme(previous);
-      applyTheme(previous);
-      ui.toast({ kind: "error", text: "Couldn't save your appearance choice. Try again." });
+    themeTouched.current = true;
+    void applyThemeChoice(pref, theme, {
+      write: writeThemePref,
+      apply: (p) => {
+        setTheme(p);
+        applyTheme(p);
+      },
+      onError: (err) => {
+        console.warn(`[${APP_NAME}] could not save the appearance choice`, err);
+        ui.toast({ kind: "error", text: "Couldn't save your appearance choice. Try again." });
+      },
     });
   }
 
@@ -87,7 +101,8 @@ export function Settings({ workflows, ui, onBack }: Props) {
   }
 
   function showWelcome() {
-    chrome.tabs.create({ url: chrome.runtime.getURL(WELCOME_PAGE) }).catch(() => {
+    showWelcomeTab().catch((err: unknown) => {
+      console.warn(`[${APP_NAME}] could not show the welcome tab`, err);
       ui.toast({ kind: "error", text: "Couldn't open the welcome tab. Try again." });
     });
   }

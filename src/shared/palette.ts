@@ -1,13 +1,16 @@
 // Colour tokens for both themes. DARK mirrors the :root block in
 // src/sidepanel/index.css; BEIGE is the warm light theme.
-export type TokenName =
-  | "bg" | "surface" | "surface-2" | "surface-raised" | "surface-hover" | "tooltip" | "hover"
-  | "line" | "line-strong" | "line-hover"
-  | "accent" | "accent-hover" | "accent-text" | "on-accent" | "accent-soft" | "accent-line"
-  | "focus"
-  | "ok" | "red" | "red-soft" | "red-line"
-  | "text" | "text-2" | "text-3"
-  | "scrim" | "shadow-color";
+export const TOKEN_NAMES = [
+  "bg", "surface", "surface-2", "surface-raised", "surface-hover", "tooltip", "hover",
+  "line", "line-strong", "line-hover",
+  "accent", "accent-hover", "accent-text", "on-accent", "accent-soft", "accent-line",
+  "focus",
+  "ok", "red", "red-soft", "red-line",
+  "text", "text-2", "text-3",
+  "scrim", "shadow-color",
+] as const;
+
+export type TokenName = (typeof TOKEN_NAMES)[number];
 
 export const DARK: Record<TokenName, string> = {
   "bg": "#121315",
@@ -68,7 +71,7 @@ export const BEIGE: Record<TokenName, string> = {
   "shadow-color": "rgba(70, 50, 20, 0.18)",
 };
 
-/** CSS custom-property declarations for a palette, in TokenName order. */
+/** CSS custom-property declarations for a palette, in TOKEN_NAMES order. */
 export function cssVars(p: Record<TokenName, string>): string {
-  return (Object.keys(DARK) as TokenName[]).map((k) => `--${k}: ${p[k]};`).join(" ");
+  return TOKEN_NAMES.map((k) => `--${k}: ${p[k]};`).join(" ");
 }
