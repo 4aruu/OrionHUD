@@ -19,6 +19,25 @@ import {
 } from "../../shared/workflowActions";
 import { copyBrief, type Ui } from "../lib/ui";
 import { completeWithFeedback } from "../lib/complete";
+import { elbowWidth, guideX, rowIndent, treeGuides, type RowGuides } from "../lib/treeGuides";
+
+/** Where a row's checkbox starts, past the caret column (16px) and the 8px gap. */
+const CHECK_OFFSET = 24;
+
+/** The hairline connectors behind a row: decorative, hidden from screen readers. */
+function Guides({ depth, g, hasCaret }: { depth: number; g: RowGuides; hasCaret: boolean }) {
+  if (!g.elbow && !g.stem) return null;
+  return (
+    <span className="guides" aria-hidden="true">
+      {g.rails.map((k) => (
+        <span key={k} className="guide guide-rail" style={{ left: guideX(k) }} />
+      ))}
+      {g.elbow && <span className="guide guide-elbow" style={{ left: guideX(depth - 1), width: elbowWidth(depth, hasCaret) }} />}
+      {g.more && <span className="guide guide-more" style={{ left: guideX(depth - 1) }} />}
+      {g.stem && <span className="guide guide-stem" style={{ left: guideX(depth) }} />}
+    </span>
+  );
+}
 
 type EditState =
   | { kind: "rename"; id: string }
@@ -62,7 +81,14 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
   const groups = workflow.rootNodes.map((root) => {
     const all = flattenVisible([root]);
     const showing = shownDone.has(root.id);
-    return { root, showing, rows: visibleRows(all, showing), doneCount: all.slice(1).filter((r) => r.node.status === "DONE").length };
+    const shown = visibleRows(all, showing);
+    return {
+      root,
+      showing,
+      rows: shown,
+      guides: treeGuides(shown.map((r) => r.depth)),
+      doneCount: all.slice(1).filter((r) => r.node.status === "DONE").length,
+    };
   });
   const rows = groups.flatMap((g) => g.rows);
   const [edit, setEdit] = useState<EditState | null>(null);
@@ -259,9 +285,11 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
     }
   }
 
-  function editInput(depth: number) {
+  /** The inline title input. `g` keeps the connectors of the row it replaces or joins. */
+  function editInput(depth: number, g?: RowGuides) {
     return (
-      <div className="row row-edit" style={{ paddingLeft: 10 + (depth - 1) * 16 }}>
+      <div className={`row row-edit ${depth >= 3 ? "row-deep" : ""}`} style={{ paddingLeft: rowIndent(depth) + CHECK_OFFSET }}>
+        {g && <Guides depth={depth} g={g} hasCaret={false} />}
         <span className="check" aria-hidden="true" />
         <input
           autoFocus
@@ -327,7 +355,7 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
         {groups.map((g) => (
           <Reveal key={g.root.id} className="tree-item">
             <div className={`group ${g.root.subTasks.length ? "" : "group-solo"}`} role="none">
-              <AnimatePresence initial={false}>{g.rows.map((r) => renderRow(r))}</AnimatePresence>
+              <AnimatePresence initial={false}>{g.rows.map((r, i) => renderRow(r, g.guides[i]!))}</AnimatePresence>
               {g.doneCount > 0 && (
                 <button
                   className="done-fold"
@@ -368,16 +396,20 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
     </div>
   );
 
-  function renderRow({ node, depth }: VisibleRow) {
+  function renderRow({ node, depth }: VisibleRow, g: RowGuides) {
         const isFocused = node.id === focusedId;
         const isActive = node.id === activeId;
         const hasKids = node.subTasks.length > 0;
         const p = hasKids ? leafProgress([node]) : null;
         const renaming = edit?.kind === "rename" && edit.id === node.id;
+        // A new first subtask lands right under this row: its input joins this row's line,
+        // which carries on below it when older children are showing.
+        const addingChild = edit?.kind === "new" && edit.parentId !== null && edit.anchorId === node.id;
+        const childGuides: RowGuides = { rails: [...g.rails, ...(g.more ? [depth - 1] : [])], elbow: true, more: g.stem, stem: false };
         return (
           <Reveal key={node.id}>
             {renaming ? (
-              editInput(depth)
+              editInput(depth, g)
             ) : (
               <div
                 id={`row-${node.id}`}
@@ -385,14 +417,15 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                 aria-level={depth}
                 aria-selected={isFocused}
                 aria-expanded={hasKids ? !node.collapsed : undefined}
-                className={`row ${hasKids ? "row-parent" : ""} ${depth === 1 && hasKids ? "row-head" : ""} ${isFocused ? "row-focused" : ""} ${isActive ? "row-active" : ""} ${node.status === "DONE" ? "row-done" : ""}`}
-                style={{ paddingLeft: 8 + (depth - 1) * 16 }}
+                className={`row ${hasKids ? "row-parent" : ""} ${depth === 1 && hasKids ? "row-head" : ""} ${depth >= 3 ? "row-deep" : ""} ${isFocused ? "row-focused" : ""} ${isActive ? "row-active" : ""} ${node.status === "DONE" ? "row-done" : ""}`}
+                style={{ paddingLeft: rowIndent(depth) }}
                 onClick={() => setFocusedId(node.id)}
                 onDoubleClick={() => {
                   setEdit({ kind: "rename", id: node.id });
                   setDraft(node.title);
                 }}
               >
+                <Guides depth={depth} g={addingChild ? { ...g, stem: true } : g} hasCaret={hasKids} />
                 {hasKids ? (
                   <button
                     className="chevron"
@@ -467,7 +500,7 @@ export function Outline({ workflow, activeId, focusedId, setFocusedId, ui, onSwi
                 </span>
               </div>
             )}
-            {edit?.kind === "new" && edit.parentId !== null && edit.anchorId === node.id && editInput(edit.depth)}
+            {addingChild && editInput(edit.depth, childGuides)}
           </Reveal>
         );
   }
