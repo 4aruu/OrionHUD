@@ -1,8 +1,15 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onPinnedChange, readPinned } from "../src/platform/action";
 import { getShortcut } from "../src/platform/commands";
 
-afterEach(() => vi.unstubAllGlobals());
+let warn: ReturnType<typeof vi.spyOn>;
+beforeEach(() => {
+  warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  warn.mockRestore();
+});
 
 describe("readPinned", () => {
   it("is null when the API is missing", async () => {
@@ -16,6 +23,7 @@ describe("readPinned", () => {
   it("is null when it throws", async () => {
     vi.stubGlobal("chrome", { action: { getUserSettings: vi.fn(() => Promise.reject(new Error("nope"))) } });
     expect(await readPinned()).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Orion Waypoint]"), expect.any(Error));
   });
 });
 
@@ -23,6 +31,14 @@ describe("onPinnedChange", () => {
   it("is a no-op without the event", () => {
     vi.stubGlobal("chrome", { action: {} });
     expect(() => onPinnedChange(() => {})()).not.toThrow();
+  });
+  it("is a no-op when chrome.action is undefined", () => {
+    vi.stubGlobal("chrome", {});
+    let off: () => void = () => {};
+    expect(() => {
+      off = onPinnedChange(() => {});
+    }).not.toThrow();
+    expect(() => off()).not.toThrow();
   });
   it("subscribes and unsubscribes", () => {
     const addListener = vi.fn();
@@ -56,5 +72,6 @@ describe("getShortcut", () => {
   it("is null when getAll throws", async () => {
     vi.stubGlobal("chrome", { commands: { getAll: vi.fn(() => Promise.reject(new Error("x"))) } });
     expect(await getShortcut("save-point")).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Orion Waypoint]"), expect.any(Error));
   });
 });

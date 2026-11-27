@@ -1,6 +1,18 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { installChromeAlarmsMock } from "./chromeMock";
+
+const fail = vi.hoisted(() => ({ addTask: false, startWorkflow: false }));
+vi.mock("../src/shared/workflowActions", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../src/shared/workflowActions")>();
+  return {
+    ...real,
+    addTask: (...a: Parameters<typeof real.addTask>) =>
+      fail.addTask ? Promise.reject(new Error("idb addTask failed")) : real.addTask(...a),
+    startWorkflow: (...a: Parameters<typeof real.startWorkflow>) =>
+      fail.startWorkflow ? Promise.reject(new Error("idb startWorkflow failed")) : real.startWorkflow(...a),
+  };
+});
 import { attachNextStep, pickUpTask, saveFromWelcome, startFromWelcome } from "../src/welcome/actions";
 import { OrionError, addTask, createWorkflow, deleteWorkflowCascade } from "../src/shared/workflowActions";
 import { getMeta, getWorkflow, listWorkflows, mutateMeta } from "../src/shared/db";
@@ -25,6 +37,8 @@ async function taskOf(wfId: string, taskId: string) {
 describe("welcome actions", () => {
   beforeEach(async () => {
     installChrome();
+    fail.addTask = false;
+    fail.startWorkflow = false;
     for (const w of await listWorkflows()) await deleteWorkflowCascade(w.id);
     await mutateMeta((m) => ({ ...m, activeWorkflowId: null, currentActiveNodeId: null, lastResumeShownAt: null }));
   });
@@ -42,6 +56,18 @@ describe("welcome actions", () => {
 
   it("startFromWelcome rejects a long title and writes nothing", async () => {
     await expect(startFromWelcome("x".repeat(121))).rejects.toBeInstanceOf(OrionError);
+    expect(await listWorkflows()).toEqual([]);
+  });
+
+  it("startFromWelcome removes the new workflow when addTask fails", async () => {
+    fail.addTask = true;
+    await expect(startFromWelcome("Doomed")).rejects.toThrow("idb addTask failed");
+    expect(await listWorkflows()).toEqual([]);
+  });
+
+  it("startFromWelcome removes the new workflow when startWorkflow fails", async () => {
+    fail.startWorkflow = true;
+    await expect(startFromWelcome("Doomed")).rejects.toThrow("idb startWorkflow failed");
     expect(await listWorkflows()).toEqual([]);
   });
 

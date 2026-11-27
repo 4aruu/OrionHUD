@@ -2,19 +2,29 @@
 
 import { captureTabs } from "../platform/tabs";
 import { validateNextStep } from "../shared/validators";
-import { addTask, createWorkflow, recordSavePoint, startWorkflow } from "../shared/workflowActions";
+import { addTask, createWorkflow, deleteWorkflowCascade, recordSavePoint, startWorkflow } from "../shared/workflowActions";
 
 export async function startFromWelcome(title: string): Promise<{ workflowId: string; taskId: string }> {
   const wf = await createWorkflow(title, 5);
-  const task = await addTask(wf.id, null, title);
-  await startWorkflow(wf.id, task.id);
-  return { workflowId: wf.id, taskId: task.id };
+  try {
+    const task = await addTask(wf.id, null, title);
+    await startWorkflow(wf.id, task.id);
+    return { workflowId: wf.id, taskId: task.id };
+  } catch (err) {
+    // Not atomic: don't leave an empty workflow behind, or a retry would create a second one.
+    await deleteWorkflowCascade(wf.id);
+    throw err;
+  }
 }
 
 export async function pickUpTask(workflowId: string, taskId: string): Promise<void> {
   await startWorkflow(workflowId, taskId);
 }
 
+/**
+ * The "Save without the shortcut" button: captures tabs and records ONE save
+ * point carrying `nextStep`. Don't also call attachNextStep for the same save.
+ */
 export async function saveFromWelcome(
   workflowId: string,
   taskId: string,
@@ -25,7 +35,11 @@ export async function saveFromWelcome(
   await recordSavePoint(workflowId, taskId, { trigger: "manual", tabs, tabsSource, nextStep: validateNextStep(nextStep) });
 }
 
-/** Records a next step on its own save point. Returns false (no write) when it's empty. */
+/**
+ * The shortcut flow: after the shortcut's own save point lands, called once to
+ * attach the typed next step (on its own save point). Returns false (no write)
+ * when empty. Don't call it after saveFromWelcome.
+ */
 export async function attachNextStep(workflowId: string, taskId: string, nextStep: string): Promise<boolean> {
   const step = validateNextStep(nextStep);
   if (!step) return false;

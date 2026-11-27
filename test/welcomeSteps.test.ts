@@ -79,6 +79,35 @@ describe("computeWelcome", () => {
     expect(computeWelcome(facts({ workflows: [wf] })).recent.map((r) => r.taskId)).toEqual(["new", "old", "none"]);
   });
 
+  it("recent includes SNOOZED tasks and milestones", () => {
+    const wf = makeWorkflow(
+      [makeTask("snz", [], { status: "SNOOZED", savePoints: [sp(2)] }), makeTask("ms", [], { isMilestone: true, savePoints: [sp(1)] })],
+      { id: "wf-x", name: "X" }
+    );
+    const s = computeWelcome(facts({ workflows: [wf] }));
+    expect(s.taskMode).toBe("pick");
+    expect(s.recent.map((r) => r.taskId)).toEqual(["snz", "ms"]);
+  });
+
+  it("a stale active pointer falls back to pick", () => {
+    const wf = makeWorkflow([makeTask("t1")]);
+    const s = computeWelcome(facts({ workflows: [wf], meta: { ...noMeta, activeWorkflowId: "deleted-wf", currentActiveNodeId: "t1" } }));
+    expect(s.active).toBeNull();
+    expect(s.taskMode).toBe("pick");
+    expect(s.steps.task).toBe("current");
+    const noTask = computeWelcome(
+      facts({ workflows: [wf], meta: { ...noMeta, activeWorkflowId: wf.id, currentActiveNodeId: "deleted-task" } })
+    );
+    expect(noTask.active).toBeNull();
+    expect(noTask.taskMode).toBe("pick");
+  });
+
+  it("a stale active pointer with no tasks falls back to create", () => {
+    const s = computeWelcome(facts({ meta: { ...noMeta, activeWorkflowId: "deleted-wf", currentActiveNodeId: "t1" } }));
+    expect(s.active).toBeNull();
+    expect(s.taskMode).toBe("create");
+  });
+
   it("only completed tasks means create mode", () => {
     const wf = makeWorkflow([makeTask("d", [], { status: "DONE" })]);
     expect(computeWelcome(facts({ workflows: [wf] })).taskMode).toBe("create");
