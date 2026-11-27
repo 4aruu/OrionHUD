@@ -79,3 +79,17 @@ it("a failed storage read keeps the mirror's theme", async () => {
   expect(r.attrs.get("data-theme")).toBe("light");
   expect(mirror.get(THEME_KEY)).toBe("light");
 });
+
+it("listens before the storage read, and a change during the read beats the stale result", async () => {
+  const bootTheme = await load();
+  let resolveRead!: (v: Record<string, unknown>) => void;
+  stubChrome(() => new Promise((r) => (resolveRead = r)));
+  const r = root();
+  const booting = bootTheme(r);
+  expect(listeners).toHaveLength(1);
+  listeners[0]!({ [THEME_KEY]: { newValue: "dark" } }, "local");
+  resolveRead({ [THEME_KEY]: "light" });
+  await booting;
+  expect(r.attrs.get("data-theme")).toBe("dark");
+  expect(mirror.get(THEME_KEY)).toBe("dark");
+});
