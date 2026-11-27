@@ -4,6 +4,7 @@ export type TokenName =
   | "bg" | "surface" | "surface-2" | "surface-raised" | "surface-hover" | "tooltip" | "hover"
   | "line" | "line-strong" | "line-hover"
   | "accent" | "accent-hover" | "accent-text" | "on-accent" | "accent-soft" | "accent-line"
+  | "focus"
   | "ok" | "red" | "red-soft" | "red-line"
   | "text" | "text-2" | "text-3"
   | "scrim" | "shadow-color";
@@ -25,6 +26,8 @@ export const DARK: Record<TokenName, string> = {
   "on-accent": "#1a1408",
   "accent-soft": "rgba(232, 163, 61, 0.09)",
   "accent-line": "rgba(232, 163, 61, 0.5)",
+  // Focus rings: 3:1 against every surface (WCAG 1.4.11). Bright amber fails on beige.
+  "focus": "#e8a33d",
   "ok": "#8fbf96",
   "red": "#f08a7a",
   "red-soft": "rgba(240, 138, 122, 0.1)",
@@ -53,6 +56,7 @@ export const BEIGE: Record<TokenName, string> = {
   "on-accent": "#1a1408",
   "accent-soft": "rgba(232, 163, 61, 0.16)",
   "accent-line": "rgba(143, 81, 0, 0.45)",
+  "focus": "#8f5100",
   "ok": "#356a3e",
   "red": "#b3261e",
   "red-soft": "rgba(179, 38, 30, 0.08)",

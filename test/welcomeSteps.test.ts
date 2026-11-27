@@ -119,9 +119,13 @@ describe("computeWelcome", () => {
     expect(computeWelcome(facts()).steps.tabs).not.toBe("done");
   });
 
-  it("save done only for a save point after openedAt", () => {
+  it("save done for any save point; savedSinceOpen only for one after openedAt", () => {
+    const none = computeWelcome(activeFacts({ openedAt: 1000 }));
+    expect(none.steps.save).not.toBe("done");
+    expect(none.savedSinceOpen).toBe(false);
+    // Reopening the page after an earlier save: the step stays done, but nothing new to attach a next step to.
     const old = computeWelcome(activeFacts({ openedAt: 1000 }, { savePoints: [sp(999)] }));
-    expect(old.steps.save).not.toBe("done");
+    expect(old.steps.save).toBe("done");
     expect(old.savedSinceOpen).toBe(false);
     const fresh = computeWelcome(activeFacts({ openedAt: 1000 }, { savePoints: [sp(1000)] }));
     expect(fresh.steps.save).toBe("done");

@@ -113,6 +113,7 @@ const shim = {
       return { id: Math.floor(Math.random() * 1e6), url };
     },
     group: async () => 99,
+    getCurrent: async () => ({ id: 7 }),
   },
   tabGroups: {
     query: async () => [],

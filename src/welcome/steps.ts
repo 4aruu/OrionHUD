@@ -29,6 +29,7 @@ export interface WelcomeState {
   active: { workflow: IWorkflowState; task: ITaskNode } | null;
   /** Only filled in "pick" mode, max 5. */
   recent: RecentTask[];
+  /** A save point made since the page opened: the card filled in on this visit (drives attachNextStep). */
   savedSinceOpen: boolean;
 }
 
@@ -84,7 +85,8 @@ export function computeWelcome(f: WelcomeFacts): WelcomeState {
   const done: Record<StepId, boolean> = {
     task: active !== null,
     tabs: f.tabsGranted || f.tabsAnswered,
-    save: savedSinceOpen,
+    // Any save point counts, so reopening the page after saving keeps the step done.
+    save: !!active && active.task.savePoints.length > 0,
     pin: f.pinned === true,
   };
 

@@ -4,14 +4,19 @@
 // everywhere via the Alt+Shift+O command and the toolbar icon's right-click
 // menu: the escape hatch where a side panel exists but misbehaves (Vivaldi).
 
-export type SurfaceMode = "panel" | "window";
+import { APP_NAME } from "../shared/brand";
+import { isOwnSender, parseExtensionMessage } from "../shared/messages";
+import { WELCOME_PAGE } from "../shared/pages";
+import { SURFACE_MODE_KEY, type SurfaceMode } from "../shared/surfaceMode";
+
+export type { SurfaceMode };
 
 /** Same page as manifest.side_panel.default_path (test/surface.test.ts keeps them in step). */
 export const PANEL_PAGE = "src/sidepanel/index.html";
 export const PANEL_WINDOW = { width: 420, height: 720 } as const;
 export const COMMAND_WINDOW = "open-window";
 
-const MODE_KEY = "surfaceMode";
+const MODE_KEY = SURFACE_MODE_KEY;
 const WINDOW_KEY = "panelWindowId";
 
 // storage.session survives service-worker restarts within a browser session and
@@ -101,4 +106,31 @@ async function focusOrCreate(): Promise<void> {
   }
   const win = await chrome.windows.create(data);
   if (win?.id !== undefined) await sessionSet({ [WINDOW_KEY]: win.id });
+}
+
+type Respond = (response: { ok: boolean }) => void;
+
+/**
+ * The welcome page's "Open the panel" in window mode (or when sidePanel.open
+ * failed there). Only the welcome page itself may ask: our own id AND a sender
+ * URL on that page, so a content script we injected into a web page can't.
+ * Returns true when it handled the message (async response).
+ */
+export function onOpenPanelWindowMessage(
+  raw: unknown,
+  sender: chrome.runtime.MessageSender,
+  respond: Respond,
+  open: () => Promise<void> = openPanelWindow
+): boolean {
+  if (!isOwnSender(sender, chrome.runtime.id)) return false;
+  if (typeof sender.url !== "string" || !sender.url.startsWith(chrome.runtime.getURL(WELCOME_PAGE))) return false;
+  if (parseExtensionMessage(raw)?.type !== "ORION_OPEN_PANEL_WINDOW") return false;
+  open().then(
+    () => respond({ ok: true }),
+    (err: unknown) => {
+      console.error(`[${APP_NAME}] could not open the panel window`, err);
+      respond({ ok: false });
+    }
+  );
+  return true;
 }

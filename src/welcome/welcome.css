@@ -73,8 +73,7 @@
 /* Display-only preview: nothing in it is pressable. */
 .wcard .now-title { cursor: default; }
 .wcard .now-title:hover { text-decoration: none; }
-.wcard .next-text { cursor: default; overflow-wrap: anywhere; }
-.wcard .next-text:hover { border-color: var(--line); }
+.wcard .now-next { font-size: 15px; font-weight: 500; color: var(--text); overflow-wrap: anywhere; }
 .wplaceholder { gap: 10px; }
 .wghost { display: block; height: 10px; border-radius: 3px; background: var(--line); }
 .wghost-1 { width: 70%; }

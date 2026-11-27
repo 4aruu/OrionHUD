@@ -17,11 +17,10 @@ import {
 } from "./idle";
 import { APP_NAME } from "../shared/brand";
 import { broadcast, notify } from "./notify";
-import { COMMAND_WINDOW, initSurface, onActionClicked, openPanelWindow } from "./surface";
+import { COMMAND_WINDOW, initSurface, onActionClicked, onOpenPanelWindowMessage, openPanelWindow } from "./surface";
 import { BRIDGE_RETRY_ALARM, connectBridge, disconnectBridge } from "./bridge";
 import { isBridgePermission } from "../platform/bridge";
 import { isOwnSender, parseExtensionMessage } from "../shared/messages";
-import { WELCOME_PAGE } from "../shared/pages";
 
 // Optional APIs are feature-detected: a browser missing one (Arc has no side
 // panel) loses only that feature, never the whole worker.
@@ -65,21 +64,7 @@ chrome.runtime.onMessage.addListener((raw, sender, respond) => {
     return true;
   }
   // Welcome page → "Open the panel" in window mode, or when sidePanel.open failed there.
-  if (
-    isOwnSender(sender, chrome.runtime.id) &&
-    typeof sender.url === "string" &&
-    sender.url.startsWith(chrome.runtime.getURL(WELCOME_PAGE)) &&
-    parseExtensionMessage(raw)?.type === "ORION_OPEN_PANEL_WINDOW"
-  ) {
-    void openPanelWindow().then(
-      () => respond({ ok: true }),
-      (err: unknown) => {
-        console.error(`[${APP_NAME}] could not open the panel window`, err);
-        respond({ ok: false });
-      }
-    );
-    return true;
-  }
+  if (onOpenPanelWindowMessage(raw, sender, respond)) return true;
   return onRuntimeMessage(raw, sender, respond);
 });
 if (chrome.permissions) {

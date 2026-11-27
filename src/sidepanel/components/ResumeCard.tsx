@@ -103,7 +103,8 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
         {nextStep && (
           <div className="next-step">
             <span className="field-label">Next step</span>
-            <p className="next-text">{nextStep}</p>
+            {/* Plain text, not the panel's click-to-edit box: nothing here is editable. */}
+            <p className="now-next">{nextStep}</p>
           </div>
         )}
         <p className="now-meta">

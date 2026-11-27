@@ -91,4 +91,11 @@ for (const [name, p] of [["dark", DARK], ["beige", BEIGE]] as const) {
     const soft = over(parse(p["accent-soft"]), parse(p.surface));
     expect(contrast(parse(p["accent-text"]), soft), "accent-text on accent-soft over surface").toBeGreaterThanOrEqual(4.5);
   });
+
+  it(`focus ring >= 3:1 against every surface, ${name}`, () => {
+    // WCAG 1.4.11 (non-text contrast): the focus indicator against what it sits on.
+    for (const bg of ["bg", "surface", "surface-2"] as const) {
+      expect(contrast(parse(p.focus), parse(p[bg])), `focus on ${bg}`).toBeGreaterThanOrEqual(3);
+    }
+  });
 }

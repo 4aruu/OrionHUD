@@ -120,7 +120,9 @@ the real resume card.
    the owner: ask for a next step, but never require it. Pressing the command on this page already works through the existing fallback
    in `openCaptureBox` (extension pages can't be scripted, so it records a save point without a next
    step and broadcasts). The page reloads via `ORION_STATE_CHANGED` and the card fills in. The step
-   is done when the active task has at least one save point newer than page load.
+   is done when the active task has at least one save point (so reopening the page after saving keeps
+   it done); the card fill-in for this visit, and the follow-up next step, use save points made since
+   the page opened.
    - The key shown is the real binding from `chrome.commands.getAll()`. If it's unassigned (another
      extension took it), the step says so and links "Set a shortcut" to the browser's shortcut page
      (same helper Settings uses).
