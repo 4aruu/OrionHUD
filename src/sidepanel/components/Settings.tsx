@@ -45,9 +45,14 @@ export function Settings({ workflows, ui, onBack }: Props) {
   }, []);
 
   function chooseTheme(pref: ThemePref) {
+    const previous = theme;
     setTheme(pref);
     applyTheme(pref);
-    void writeThemePref(pref);
+    writeThemePref(pref).catch(() => {
+      setTheme(previous);
+      applyTheme(previous);
+      ui.toast({ kind: "error", text: "Couldn't save your appearance choice. Try again." });
+    });
   }
 
   function toggleTabs() {
@@ -94,23 +99,17 @@ export function Settings({ workflows, ui, onBack }: Props) {
         </div>
       </header>
 
-      <section className="card">
-        <h3 id="appearance-h">Appearance</h3>
-        <div className="row-buttons" role="radiogroup" aria-labelledby="appearance-h">
+      <fieldset className="card">
+        <legend className="card-legend">Appearance</legend>
+        <div className="row-buttons">
           {THEME_CHOICES.map((c) => (
-            <button
-              key={c.value}
-              type="button"
-              role="radio"
-              aria-checked={theme === c.value}
-              className={`btn btn-ghost btn-sm ${theme === c.value ? "btn-on" : ""}`}
-              onClick={() => chooseTheme(c.value)}
-            >
+            <label key={c.value} className={`btn btn-ghost btn-sm radio-chip ${theme === c.value ? "btn-on" : ""}`}>
+              <input type="radio" name="appearance" value={c.value} checked={theme === c.value} onChange={() => chooseTheme(c.value)} />
               {c.label}
-            </button>
+            </label>
           ))}
         </div>
-      </section>
+      </fieldset>
 
       <section className="card">
         <h3>Tab memory</h3>
