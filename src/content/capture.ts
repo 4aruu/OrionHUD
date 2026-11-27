@@ -13,6 +13,7 @@ const HOST_ID = "orionhud-capture-host";
 function readConfig(): CaptureConfig | null {
   const g = globalThis as unknown as { __orionCapture?: unknown };
   const raw = g.__orionCapture;
+  // Consumed once: a later injection that skips the config step can't reuse a stale one.
   delete g.__orionCapture;
   return parseCaptureConfig(raw);
 }

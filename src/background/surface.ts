@@ -16,7 +16,6 @@ export const PANEL_PAGE = "src/sidepanel/index.html";
 export const PANEL_WINDOW = { width: 420, height: 720 } as const;
 export const COMMAND_WINDOW = "open-window";
 
-const MODE_KEY = SURFACE_MODE_KEY;
 const WINDOW_KEY = "panelWindowId";
 
 // storage.session survives service-worker restarts within a browser session and
@@ -47,7 +46,7 @@ export async function initSurface(): Promise<SurfaceMode> {
       mode = "window";
     }
   }
-  await sessionSet({ [MODE_KEY]: mode });
+  await sessionSet({ [SURFACE_MODE_KEY]: mode });
   return mode;
 }
 
@@ -57,7 +56,7 @@ export async function initSurface(): Promise<SurfaceMode> {
  * opening a window.
  */
 export async function onActionClicked(): Promise<void> {
-  const mode = (await sessionGet(MODE_KEY)) ?? (await initSurface());
+  const mode = (await sessionGet(SURFACE_MODE_KEY)) ?? (await initSurface());
   if (mode === "panel") return;
   await openPanelWindow();
 }
