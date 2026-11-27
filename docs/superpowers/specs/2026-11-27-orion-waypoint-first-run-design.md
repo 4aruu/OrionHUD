@@ -1,6 +1,6 @@
 # Orion Waypoint: first run + light theme (launch piece 2)
 
-Status: design, awaiting owner approval. Date: 2026-11-27.
+Status: approved, implemented on claude/orion-waypoint-first-run. Date: 2026-11-27.
 Mockups (local, not committed): `.superpowers/brainstorm/818-1795786222/content/` — `welcome-v2.html`, `light-theme-v2.html`.
 
 ## Launch plan this piece belongs to
@@ -162,6 +162,7 @@ Tokens (light). Dark tokens are unchanged from `src/sidepanel/index.css`.
 | `--accent` (fills, borders) | `#e8a33d` | `#e8a33d` |
 | `--accent-text` (new: amber used as text) | `#e8a33d` | `#8f5100` |
 | `--on-accent` | `#1a1408` | `#1a1408` |
+| `--focus` (focus rings and focused-field borders, R14: 3:1 on every surface) | `#e8a33d` | `#8f5100` |
 | `--accent-soft` | `rgba(232,163,61,.09)` | `rgba(232,163,61,.16)` |
 | `--ok` | `#8fbf96` | `#356a3e` |
 | `--hover` | `rgba(255,255,255,.04)` | `rgba(60,45,20,.05)` |

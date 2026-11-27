@@ -5,7 +5,8 @@
 | 0.1 | IndexedDB storage, alarms, distraction guard, basic side panel | original tests |
 | 0.2 | Save points, resume card, keyboard outliner, milestones, decisions, inbox, handoff brief, AI-aware tab memory, crash recovery, backup; atomic cross-context storage; security hardening | `npm test` (11+ files), `npm run build`, dev-harness QA in a real browser; README manual checklist for in-Chrome checks |
 | 0.2 (brand) | Renamed to Orion Waypoint; frosted Way Back icon set with render/check pipeline; manifest identity, README, PRIVACY | `npm test` (incl. icon check), `npm run build`, dev-harness check |
-| 0.3 (first run) | Welcome tab on fresh install (four skippable steps beside a live preview of the resume card, Open the panel, backup import); beige light theme with Settings → Appearance (System / Light / Dark) for the panel, welcome tab and capture box; Settings → Show welcome again | `npm test` (incl. tokens, palette contrast, welcome steps/actions, install), `npm run typecheck`, `npm run build`, dev-harness walk-through (`/welcome.html?reset`) by keyboard in both themes and at 600px |
+| 0.3 (first run) | Welcome tab on fresh install (four skippable steps beside a live preview of the resume card, Open the panel, backup import); beige light theme with Settings → Appearance (System / Light / Dark) for the panel, welcome tab and capture box; Settings → Show welcome again | `npm test` (incl. tokens, palette contrast, welcome steps/actions, install, theme-boot script), `npm run typecheck`, `npm run build`; dev harness in Chromium with dark and light system themes: welcome steps 1–3 done keyboard-only (Tab/Shift+Tab, Enter, Space; step 4 has no control in the harness) with the `--focus` ring or border on every stop, the welcome page at 600px wide (one column, no horizontal scroll, every stop reachable), Settings → Appearance changed with the arrow keys with a visible ring, and the classic theme script setting a Light/Dark override before any module runs |
+| 0.3 (agent bridge) | Optional local MCP helper (`bridge/`, native messaging) so Claude Code, Cursor or any MCP client can read the current task's brief, add and check off its subtasks, and log decisions | `npm test` (incl. `bridge/test`), `npm run typecheck` (incl. `-p bridge`), `npm run build` (builds `bridge/dist/orion-bridge.mjs`) |
 
 Design: `docs/superpowers/specs/2026-11-23-save-points-design.md`
 Plan: `docs/superpowers/plans/2026-11-23-save-points.md`
@@ -41,6 +42,10 @@ These depend on Chrome itself and can't run in Node or the dev harness; see the 
   - The pin step ticks itself when you pin the icon (and un-ticks when you unpin), where the browser reports pin state.
   - Open the panel opens the side panel in panel mode, and the panel window in Arc (window mode).
   - No theme flash when opening the panel with Settings → Appearance → Light while the system is dark (and Dark under a light system).
+  - `Alt+Shift+S` on the welcome tab shows no "Add a next step" notification (the page attaches the typed step), which relies on `tab.url` being visible for the extension's own page without the `tabs` permission.
+  - Settings → Show welcome again focuses the welcome tab when one is already open, and opens one otherwise.
+  - Footer "Import a backup" on the welcome tab: step 1 flips to "Pick up where you were" with the imported tasks.
+  - Open the panel in Opera and Vivaldi window mode opens (or focuses) the panel window.
   - The capture box is beige on a white site under the Light theme (or a light system theme).
 
 ## Before the Web Store submission
@@ -50,5 +55,5 @@ Export a backup (Settings), install from the store, then Import it.
 
 ## Next
 
-1. Chrome Web Store submission (privacy policy ready; first-run welcome tab in place). The agent bridge shipped in 0.3.
+1. Chrome Web Store submission (privacy policy ready; first-run welcome tab in place).
 2. Optional on-device thread summaries (Chrome Summarizer API) behind a capability check.
