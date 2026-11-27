@@ -1,10 +1,8 @@
 // public/theme-boot.js is a classic script that sets the theme before first paint.
 // It can't import applyTheme, so this keeps the two in step.
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { applyTheme, parseThemePref, THEME_KEY } from "../src/shared/theme";
-
-const SOURCE = readFileSync(new URL("../public/theme-boot.js", import.meta.url), "utf8");
+import SOURCE from "../public/theme-boot.js?raw";
 
 function stubRoot(initial?: string) {
   const attrs = new Map<string, string>();
@@ -54,10 +52,15 @@ describe("public/theme-boot.js", () => {
 });
 
 describe("pages load it in <head>", () => {
-  const pages = ["../src/sidepanel/index.html", "../src/welcome/index.html", "../dev/index.html", "../dev/welcome.html"];
-  for (const page of pages) {
+  const pages = {
+    ...import.meta.glob("../src/*/index.html", { query: "?raw", import: "default", eager: true }),
+    ...import.meta.glob("../dev/*.html", { query: "?raw", import: "default", eager: true }),
+  } as Record<string, string>;
+  it("finds the four pages", () => {
+    expect(Object.keys(pages).sort()).toEqual(["../dev/index.html", "../dev/welcome.html", "../src/sidepanel/index.html", "../src/welcome/index.html"]);
+  });
+  for (const [page, html] of Object.entries(pages)) {
     it(page, () => {
-      const html = readFileSync(new URL(page, import.meta.url), "utf8");
       const head = html.slice(0, html.indexOf("</head>"));
       expect(head).toContain('<script src="/theme-boot.js"></script>');
     });
