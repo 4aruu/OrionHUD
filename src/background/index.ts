@@ -3,7 +3,8 @@
 // and no handler assumes anything survived in memory since the last event.
 
 import { onCommand, onRuntimeMessage } from "./capture";
-import { createMenus, onMenuClicked } from "./menus";
+import { onMenuClicked } from "./menus";
+import { onInstalled } from "./install";
 import { handleTabChange } from "./guard";
 import { handleTaskAlarm } from "./timesUp";
 import {
@@ -32,10 +33,7 @@ if (chrome.idle) chrome.idle.setDetectionInterval(IDLE_THRESHOLD_SECONDS);
 // granted; with the host missing this fails fast and records "not installed".
 void connectBridge();
 
-chrome.runtime.onInstalled.addListener(() => {
-  createMenus();
-  void ensureLiveTabsAlarm();
-});
+chrome.runtime.onInstalled.addListener((details) => void onInstalled(details));
 
 chrome.runtime.onStartup.addListener(() => {
   void ensureLiveTabsAlarm();
