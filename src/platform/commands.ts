@@ -10,3 +10,8 @@ export async function getShortcut(name: string): Promise<string | null> {
     return null;
   }
 }
+
+/** The browser's keyboard-shortcuts page for extensions (Settings and the welcome page). */
+export function openShortcutSettings(): Promise<chrome.tabs.Tab> {
+  return chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+}

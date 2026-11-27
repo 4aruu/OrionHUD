@@ -1,0 +1,90 @@
+/* Welcome tab. Builds on the panel's base styles (index.css) and tokens only:
+   no colour literals here (test/tokens.test.ts). Two columns from 760px,
+   stacked below. Amber as text is always --accent-text. */
+
+.welcome {
+  max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px;
+  display: grid; gap: 32px;
+}
+@media (min-width: 760px) {
+  .welcome { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; padding: 56px 40px 80px; align-items: start; }
+  /* The card stays in view while you walk the steps. */
+  .wcol-card { position: sticky; top: 32px; padding-top: 84px; }
+}
+
+/* ── Heading ────────────────────────────────────────── */
+.wbrand { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; }
+.wbrand img { width: 32px; height: 32px; border-radius: var(--r-sm); }
+.whead { margin-top: 24px; font-size: 26px; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; text-wrap: balance; }
+.wlead { margin-top: 8px; font-size: 15px; color: var(--text-2); }
+
+/* ── Steps ──────────────────────────────────────────── */
+.wsteps { list-style: none; margin-top: 24px; }
+.wstep { display: flex; gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
+.wstep-num {
+  flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  border: 1px solid var(--line-strong); color: var(--text-2); font-size: 12px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+}
+.wstep-current .wstep-num { border-color: var(--accent); color: var(--accent-text); }
+.wstep-done .wstep-num { background: var(--ok); border-color: var(--ok); color: var(--bg); }
+.wstep-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.wstep-title { font-size: 15px; font-weight: 600; line-height: 24px; }
+.wstep-todo .wstep-title { color: var(--text-2); }
+.wstep-text { font-size: 14px; color: var(--text-2); }
+.wstep-answer { color: var(--text); overflow-wrap: anywhere; }
+.wstep-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.wstep-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 13px; color: var(--text-3); }
+.wstep .link-btn { font-size: 13px; min-height: 24px; }
+.wform { display: flex; flex-direction: column; gap: 8px; }
+.wform .inline-form input { flex: 1; min-width: 0; }
+.wform input { min-height: 36px; }
+.wopt { font-weight: 400; color: var(--text-3); }
+
+/* Step 1, pick mode: recent open tasks, one click each. */
+.wpick { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.wpick-btn {
+  width: 100%; display: flex; align-items: baseline; gap: 12px; text-align: left; cursor: pointer;
+  padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface);
+  transition: background-color var(--t), border-color var(--t);
+}
+.wpick-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.wpick-btn[aria-busy="true"] { cursor: progress; }
+.wpick-title { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.wpick-wf { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+
+/* Step 3: waiting for the shortcut. */
+.wlisten {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r-sm);
+  border: 1px dashed var(--accent); color: var(--accent-text); font-size: 13px;
+}
+.wlisten-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: wpulse 1.6s var(--ease) infinite; }
+@keyframes wpulse { 50% { opacity: 0.3; } }
+
+/* ── Open the panel, footer ─────────────────────────── */
+.wopen { margin-top: 24px; min-height: 40px; padding: 0 20px; }
+.wfoot { margin-top: 16px; font-size: 13px; color: var(--text-3); }
+.wfoot .link-btn { font-size: 13px; }
+
+/* ── The card column ────────────────────────────────── */
+.wcard-label { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 8px; }
+.wcard .now { margin: 0; border: 1px solid var(--line); border-radius: var(--r-md); }
+/* Display-only preview: nothing in it is pressable. */
+.wcard .now-title { cursor: default; }
+.wcard .now-title:hover { text-decoration: none; }
+.wcard .next-text { cursor: default; overflow-wrap: anywhere; }
+.wcard .next-text:hover { border-color: var(--line); }
+.wplaceholder { gap: 10px; }
+.wghost { display: block; height: 10px; border-radius: 3px; background: var(--line); }
+.wghost-1 { width: 70%; }
+.wghost-2 { width: 90%; }
+.wghost-3 { width: 45%; }
+.wcard-after { margin-top: 12px; font-size: 13px; color: var(--text-2); }
+
+/* The panel's toast spans the panel's width; on a page it sits centred. */
+.toast-region { left: 50%; right: auto; transform: translateX(-50%); width: min(440px, calc(100% - 24px)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wlisten-dot { animation: none; }
+}

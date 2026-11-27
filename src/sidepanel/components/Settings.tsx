@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { IWorkflowState } from "../../shared/types";
-import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
+import { deleteWorkflowCascade, exportBackup } from "../../shared/workflowActions";
+import { WELCOME_PAGE } from "../../shared/pages";
+import { openShortcutSettings } from "../../platform/commands";
+import { importBackupFile } from "../lib/backup";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
 import { backupFileName, countLabel } from "../lib/format";
 import type { Ui } from "../lib/ui";
@@ -79,13 +82,14 @@ export function Settings({ workflows, ui, onBack }: Props) {
   }
 
   async function doImport(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      ui.toast({ kind: "error", text: "Backup file is larger than 5 MB." });
-      return;
-    }
-    const text = await file.text();
-    const r = await ui.run(() => importBackup(text));
+    const r = await ui.run(() => importBackupFile(file));
     if (r) ui.toast({ kind: "info", text: `Imported ${countLabel(r.imported, "workflow")}.` });
+  }
+
+  function showWelcome() {
+    chrome.tabs.create({ url: chrome.runtime.getURL(WELCOME_PAGE) }).catch(() => {
+      ui.toast({ kind: "error", text: "Couldn't open the welcome tab. Try again." });
+    });
   }
 
   return (
@@ -138,7 +142,10 @@ export function Settings({ workflows, ui, onBack }: Props) {
           </li>
           <li>Right-click selected text → <BrandName /> › Pin as a decision</li>
         </ul>
-        <button className="btn btn-ghost btn-sm" onClick={() => void chrome.tabs.create({ url: "chrome://extensions/shortcuts" })}>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => openShortcutSettings().catch(() => ui.toast({ kind: "error", text: "Couldn't open the shortcuts page. Try again." }))}
+        >
           Change shortcuts
         </button>
       </section>
@@ -203,7 +210,12 @@ export function Settings({ workflows, ui, onBack }: Props) {
         </ConfirmDialog>
       )}
 
-      <p className="muted small pad"><BrandName /> {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
+      <p className="muted small pad">
+        <BrandName /> {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking ·{" "}
+        <button className="link-btn" onClick={showWelcome}>
+          Show welcome again
+        </button>
+      </p>
     </div>
   );
 }

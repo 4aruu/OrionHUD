@@ -23,6 +23,10 @@ const storageListeners = new Set<Listener>();
 type PermReq = { permissions?: string[] };
 const isBridge = (p: PermReq) => p.permissions?.includes("nativeMessaging") ?? false;
 let badge = "";
+// Welcome page facts: the save-point binding and the toolbar pin.
+let saveShortcut: string | null = "Alt+Shift+S";
+let pinned = false;
+const pinListeners = new Set<Listener>();
 const messageListeners = new Set<Listener>();
 const log = (...a: unknown[]) => console.info("[chrome-shim]", ...a);
 
@@ -47,6 +51,20 @@ const shim = {
     },
     setTitle: async () => undefined,
     setBadgeBackgroundColor: async () => undefined,
+    getUserSettings: async () => ({ isOnToolbar: pinned }),
+    onUserSettingsChanged: {
+      addListener: (l: Listener) => pinListeners.add(l),
+      removeListener: (l: Listener) => pinListeners.delete(l),
+    },
+  },
+  commands: {
+    getAll: async () => [
+      { name: "save-point", shortcut: saveShortcut ?? "", description: "Save a save point" },
+      { name: "quick-capture", shortcut: "Alt+Shift+Q", description: "Capture a side quest" },
+    ],
+  },
+  sidePanel: {
+    open: async (opts: unknown) => log("sidePanel.open", opts),
   },
   permissions: {
     contains: async (p: PermReq) => (isBridge(p) ? bridgeGranted : tabsGranted),
@@ -100,7 +118,7 @@ const shim = {
     query: async () => [],
     update: async (_id: number, props: unknown) => log("group", props),
   },
-  windows: { getLastFocused: async () => ({ id: 1 }) },
+  windows: { getLastFocused: async () => ({ id: 1 }), getCurrent: async () => ({ id: 1 }) },
   alarms: {
     create: async (name: string, info: unknown) => log("alarm", name, info),
     clear: async () => true,
@@ -115,5 +133,13 @@ const shim = {
   },
   setTabsGranted(v: boolean) {
     tabsGranted = v;
+  },
+  /** null = unassigned (another extension took it). */
+  setSaveShortcut(v: string | null) {
+    saveShortcut = v;
+  },
+  setPinned(v: boolean) {
+    pinned = v;
+    pinListeners.forEach((l) => l({ isOnToolbar: v }));
   },
 };
