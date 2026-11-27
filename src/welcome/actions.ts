@@ -1,6 +1,7 @@
 // Data actions behind the welcome page. Validation failures surface as OrionError.
 
 import { captureTabs } from "../platform/tabs";
+import { APP_NAME } from "../shared/brand";
 import { validateNextStep } from "../shared/validators";
 import { addTask, createWorkflow, deleteWorkflowCascade, recordSavePoint, startWorkflow } from "../shared/workflowActions";
 
@@ -12,7 +13,12 @@ export async function startFromWelcome(title: string): Promise<{ workflowId: str
     return { workflowId: wf.id, taskId: task.id };
   } catch (err) {
     // Not atomic: don't leave an empty workflow behind, or a retry would create a second one.
-    await deleteWorkflowCascade(wf.id);
+    try {
+      await deleteWorkflowCascade(wf.id);
+    } catch (cleanupErr) {
+      // The original failure is what the user needs to hear about; the cleanup one goes to the console.
+      console.warn(`[${APP_NAME}] could not remove the half-created workflow`, cleanupErr);
+    }
     throw err;
   }
 }

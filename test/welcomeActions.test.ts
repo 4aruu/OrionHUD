@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { installChromeAlarmsMock } from "./chromeMock";
 
-const fail = vi.hoisted(() => ({ addTask: false, startWorkflow: false }));
+const fail = vi.hoisted(() => ({ addTask: false, startWorkflow: false, cleanup: false }));
 vi.mock("../src/shared/workflowActions", async (importOriginal) => {
   const real = await importOriginal<typeof import("../src/shared/workflowActions")>();
   return {
@@ -11,6 +11,8 @@ vi.mock("../src/shared/workflowActions", async (importOriginal) => {
       fail.addTask ? Promise.reject(new Error("idb addTask failed")) : real.addTask(...a),
     startWorkflow: (...a: Parameters<typeof real.startWorkflow>) =>
       fail.startWorkflow ? Promise.reject(new Error("idb startWorkflow failed")) : real.startWorkflow(...a),
+    deleteWorkflowCascade: (...a: Parameters<typeof real.deleteWorkflowCascade>) =>
+      fail.cleanup ? Promise.reject(new Error("idb cleanup failed")) : real.deleteWorkflowCascade(...a),
   };
 });
 import { attachNextStep, pickUpTask, saveFromWelcome, startFromWelcome } from "../src/welcome/actions";
@@ -39,6 +41,7 @@ describe("welcome actions", () => {
     installChrome();
     fail.addTask = false;
     fail.startWorkflow = false;
+    fail.cleanup = false;
     for (const w of await listWorkflows()) await deleteWorkflowCascade(w.id);
     await mutateMeta((m) => ({ ...m, activeWorkflowId: null, currentActiveNodeId: null, lastResumeShownAt: null }));
   });
@@ -69,6 +72,19 @@ describe("welcome actions", () => {
     fail.startWorkflow = true;
     await expect(startFromWelcome("Doomed")).rejects.toThrow("idb startWorkflow failed");
     expect(await listWorkflows()).toEqual([]);
+  });
+
+  it("startFromWelcome rethrows the original error when the cleanup also fails, and warns about the cleanup", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      fail.addTask = true;
+      fail.cleanup = true;
+      await expect(startFromWelcome("Doomed")).rejects.toThrow("idb addTask failed");
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("[Orion Waypoint]"), expect.objectContaining({ message: "idb cleanup failed" }));
+    } finally {
+      warn.mockRestore();
+      fail.cleanup = false;
+    }
   });
 
   it("pickUpTask makes it active", async () => {
