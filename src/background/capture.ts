@@ -28,7 +28,8 @@ async function openCaptureBox(mode: CaptureMode, tab: chrome.tabs.Tab | undefine
   }
   const label = mode === "save" ? `Save point · ${task?.title ?? ""}` : `Inbox · ${workflow.name}`;
   if (tab?.id === undefined) return;
-  const theme = await readThemePref();
+  // Outside the try: a throw here must not run the can't-script fallback (which records a save point).
+  const theme = await readThemePref().catch(() => "system" as const);
   try {
     // Runs in the extension's isolated world, invisible to the page.
     await chrome.scripting.executeScript({
@@ -46,6 +47,8 @@ async function openCaptureBox(mode: CaptureMode, tab: chrome.tabs.Tab | undefine
       const tabs = await captureTabs(task.title, tab);
       await recordSavePoint(workflow.id, task.id, { trigger: "manual", ...tabs });
       broadcast("command");
+      // Our own pages (the welcome tab) show the save point and attach the typed next step themselves.
+      if (tab.url?.startsWith(chrome.runtime.getURL(""))) return;
       await notify("orion-saved", "Save point recorded", `“${task.title}”. Add a next step in ${APP_NAME}.`);
     } else {
       await notify("orion-blocked", APP_NAME, `Your browser doesn't allow extensions on this page. Open ${APP_NAME} instead.`);
