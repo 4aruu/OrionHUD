@@ -14,6 +14,8 @@ Orion Waypoint is a browser extension that stores your work plan and save points
 
 Nowhere. Everything is stored locally in your browser's extension storage (IndexedDB) on your computer. Orion Waypoint makes no network requests: no servers, no accounts, no analytics, no third-party code, no remote fonts. Nothing is sold or shared.
 
+Your theme choice (system, light or dark) is stored locally in the browser, like the rest of your settings.
+
 Data leaves your computer only when **you** do it: copying a handoff brief to your clipboard, exporting a backup file, or connecting a coding agent through the optional agent bridge.
 
 ## Permissions
