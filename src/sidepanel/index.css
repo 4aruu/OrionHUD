@@ -202,8 +202,8 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .row-head:hover { background: var(--surface-hover); }
 .row-focused { background: var(--hover); }
 .tree:focus .row-focused { box-shadow: inset 2px 0 0 var(--text-2); }
-.row-active, .row-active:hover { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
-.tree:focus .row-active.row-focused { box-shadow: inset 2px 0 0 var(--accent); }
+.row-active, .row-active:hover { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent-text); }
+.tree:focus .row-active.row-focused { box-shadow: inset 2px 0 0 var(--accent-text); }
 .row-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row-parent:not(.row-head) > .row-title { color: var(--text-2); }
 .row.row-active > .row-title { color: var(--text); font-weight: 600; }
@@ -215,7 +215,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
   background: none; display: grid; place-items: center; font-size: 12px; line-height: 1; color: var(--bg); cursor: pointer;
 }
 .check:hover { border-color: var(--text); }
-.row-active .check { border-color: var(--accent); }
+.row-active .check { border-color: var(--accent-text); }
 /* The visible box stays small; the clickable area is 24px+. */
 .check::after, .chevron::after { content: ""; position: absolute; inset: -4px; }
 .check-done { background: var(--text-3); border-color: var(--text-3); font-weight: 700; }
@@ -319,7 +319,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
   border: 0; background: none; cursor: pointer;
 }
 .wf-card:hover { background: var(--hover); }
-.wf-card-active { box-shadow: inset 2px 0 0 var(--accent); }
+.wf-card-active { box-shadow: inset 2px 0 0 var(--accent-text); }
 .wf-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .wf-name { font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
 .onboard { display: flex; flex-direction: column; gap: 16px; padding-top: 12px; }

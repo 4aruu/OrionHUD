@@ -31,7 +31,7 @@ const RULES = `
   margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 input { all: unset; box-sizing: border-box; width: 100%; padding: 10px 12px; border-radius: 8px;
   background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-size: 14px; }
-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input:focus { border-color: var(--focus); box-shadow: 0 0 0 3px var(--accent-soft); }
 .hint { margin-top: 8px; font-size: 11px; color: var(--text-3); display: flex; justify-content: space-between; gap: 8px; }
 .hint .brand { white-space: nowrap; }
 .hint.ok { color: var(--ok); } .hint.err { color: var(--red); }

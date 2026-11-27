@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BEIGE, DARK, type TokenName } from "../src/shared/palette";
+import { captureStyles } from "../src/content/captureConfig";
 
 const css = import.meta.glob("../src/**/*.css", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const TOKENS = "../src/shared/tokens.css";
@@ -36,9 +37,34 @@ describe("tokens.css", () => {
     expect(hits).toEqual([]);
   });
 
+  // Every stylesheet, plus the capture box's (built at runtime from captureConfig).
+  const sources = () => ({ ...css, "captureStyles()": captureStyles("system") });
+
   it("uses the accent only as a fill or border, never as text", () => {
-    // `color:` on its own; accent-color and border-color are allowed.
+    // `color:` on its own; accent-color and border-color are allowed. Text uses --accent-text.
     expect(css[PANEL]).toBeDefined();
-    expect(css[PANEL] ?? "").not.toMatch(/(^|[\s;{])color:\s*var\(--accent\)/m);
+    const hits = Object.entries(sources())
+      .filter(([, text]) => /(^|[\s;{])color:\s*var\(--accent\)/m.test(text))
+      .map(([file]) => file);
+    expect(hits).toEqual([]);
+  });
+
+  it("focus indication uses --focus, never the bright accent", () => {
+    // WCAG 1.4.11: bright amber is under 3:1 on beige surfaces; --focus is 3:1+ in both themes.
+    const hits = Object.entries(sources()).flatMap(([file, text]) =>
+      [...text.matchAll(/([^{}]*:focus[^{]*)\{([^}]*)\}/g)]
+        .filter((m) => m[2]!.includes("var(--accent)"))
+        .map((m) => `${file}: ${m[1]!.trim()}`)
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it("lines marking the active task use --accent-text (3:1 on beige), not --accent", () => {
+    const panel = css[PANEL] ?? "";
+    for (const sel of [".row-active .check {", ".row-active, .row-active:hover {", ".tree:focus .row-active.row-focused {", ".wf-card-active {"]) {
+      const at = panel.indexOf(sel);
+      expect(at, sel).toBeGreaterThanOrEqual(0);
+      expect(panel.slice(at, panel.indexOf("}", at)), sel).not.toContain("var(--accent)");
+    }
   });
 });
