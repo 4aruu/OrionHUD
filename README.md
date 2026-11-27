@@ -38,6 +38,8 @@ Then open your browser's extensions page (`chrome://extensions`, `edge://extensi
 
 Optional: Settings → **Turn on tab memory** to let save points remember tabs (see Permissions).
 
+A fresh install opens a short welcome tab (name your work, tab memory, your first save point, pin the icon); Settings → **Show welcome again** reopens it, and Settings → **Appearance** switches between System, Light (beige) and Dark.
+
 ## Supported browsers
 
 One build for every Chromium browser, built for the Chrome Web Store (listing in progress), which Edge, Brave, Opera, Vivaldi and Arc can all install from. Where a browser has no side panel, the same panel opens as a small window beside your browser window. Rows marked † describe expected behaviour that is checked by hand on that browser before each release (see `docs/IMPLEMENTATION_PLAN.md`).

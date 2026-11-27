@@ -5,11 +5,14 @@
 | 0.1 | IndexedDB storage, alarms, distraction guard, basic side panel | original tests |
 | 0.2 | Save points, resume card, keyboard outliner, milestones, decisions, inbox, handoff brief, AI-aware tab memory, crash recovery, backup; atomic cross-context storage; security hardening | `npm test` (11+ files), `npm run build`, dev-harness QA in a real browser; README manual checklist for in-Chrome checks |
 | 0.2 (brand) | Renamed to Orion Waypoint; frosted Way Back icon set with render/check pipeline; manifest identity, README, PRIVACY | `npm test` (incl. icon check), `npm run build`, dev-harness check |
+| 0.3 (first run) | Welcome tab on fresh install (four skippable steps beside a live preview of the resume card, Open the panel, backup import); beige light theme with Settings → Appearance (System / Light / Dark) for the panel, welcome tab and capture box; Settings → Show welcome again | `npm test` (incl. tokens, palette contrast, welcome steps/actions, install), `npm run typecheck`, `npm run build`, dev-harness walk-through (`/welcome.html?reset`) by keyboard in both themes and at 600px |
 
 Design: `docs/superpowers/specs/2026-11-23-save-points-design.md`
 Plan: `docs/superpowers/plans/2026-11-23-save-points.md`
 Brand design: `docs/superpowers/specs/2026-11-24-orion-waypoint-brand-design.md`
 Brand plan: `docs/superpowers/plans/2026-11-24-orion-waypoint-brand.md`
+First-run design: `docs/superpowers/specs/2026-11-27-orion-waypoint-first-run-design.md`
+First-run plan: `docs/superpowers/plans/2026-11-27-orion-waypoint-first-run.md`
 Research: `docs/research/2026-11-23-competitive-landscape.md`
 
 ## Not yet verified in real Chrome
@@ -32,6 +35,13 @@ These depend on Chrome itself and can't run in Node or the dev harness; see the 
   - Vivaldi: note whether the side panel opens; the window must always work.
   - Every browser: Settings → Change shortcuts opens that browser's shortcut page; the tab-memory prompt wording matches what the browser shows.
   - Window mode: a time's-up notification does not claim you drifted just because the Orion window had focus.
+- First run (0.3):
+  - A fresh install opens the welcome tab once; reloading or updating the extension (and a browser update) does not.
+  - On the welcome tab, `Alt+Shift+S` records a save point and the preview card fills in; a typed next step shows on the card as the next step.
+  - The pin step ticks itself when you pin the icon (and un-ticks when you unpin), where the browser reports pin state.
+  - Open the panel opens the side panel in panel mode, and the panel window in Arc (window mode).
+  - No theme flash when opening the panel with Settings → Appearance → Light while the system is dark (and Dark under a light system).
+  - The capture box is beige on a white site under the Light theme (or a light system theme).
 
 ## Before the Web Store submission
 
@@ -40,6 +50,5 @@ Export a backup (Settings), install from the store, then Import it.
 
 ## Next
 
-1. v0.3 agent bridge (MCP via `npx` + native messaging), with `brief.ts` as the contract.
-2. Chrome Web Store submission (privacy policy ready).
-3. Optional on-device thread summaries (Chrome Summarizer API) behind a capability check.
+1. Chrome Web Store submission (privacy policy ready; first-run welcome tab in place). The agent bridge shipped in 0.3.
+2. Optional on-device thread summaries (Chrome Summarizer API) behind a capability check.
