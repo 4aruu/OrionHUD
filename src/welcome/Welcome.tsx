@@ -180,15 +180,18 @@ function Welcome() {
   }
   useEffect(() => () => clearTimeout(announceTimer.current), []);
 
-  // The shortcut's save point carries no next step: attach the typed one, once.
+  // The shortcut's save point on this page carries no next step: attach the typed one, once.
+  // A save point that already has one (the capture box on another tab, or an edit in the
+  // panel) is newer than the draft, so it wins and the draft is dropped.
   const savedSinceOpen = state?.savedSinceOpen ?? false;
+  const lastSinceOpen = state?.lastSinceOpen ?? null;
   const active = state?.active ?? null;
   useEffect(() => {
-    if (!savedSinceOpen || !active || nextStepHandled.current) return;
+    if (!lastSinceOpen || !active || nextStepHandled.current) return;
     nextStepHandled.current = true;
-    if (!draft.trim()) return;
+    if (lastSinceOpen.nextStep || !draft.trim()) return;
     void ui.run(() => attachNextStep(active.workflow.id, active.task.id, draft));
-  }, [savedSinceOpen, active, draft, ui]);
+  }, [lastSinceOpen, active, draft, ui]);
 
   function saveNow() {
     if (!active) return;

@@ -1,6 +1,6 @@
 // Pure first-run checklist logic. No chrome.* or db calls.
 
-import type { IAppMeta, ITaskNode, IWorkflowState } from "../shared/types";
+import type { IAppMeta, ISavePoint, ITaskNode, IWorkflowState } from "../shared/types";
 import { findTaskNode, walk } from "../shared/taskTree";
 
 export type StepId = "task" | "tabs" | "save" | "pin";
@@ -29,8 +29,14 @@ export interface WelcomeState {
   active: { workflow: IWorkflowState; task: ITaskNode } | null;
   /** Only filled in "pick" mode, max 5. */
   recent: RecentTask[];
-  /** A save point made since the page opened: the card filled in on this visit (drives attachNextStep). */
+  /** A save point made since the page opened: the card filled in on this visit. */
   savedSinceOpen: boolean;
+  /**
+   * The newest save point made since the page opened (drives attachNextStep).
+   * When it already carries a next step (typed in the capture box, or edited
+   * in the panel), that step is newer than the welcome draft and must win.
+   */
+  lastSinceOpen: ISavePoint | null;
 }
 
 const ORDER: StepId[] = ["task", "tabs", "save", "pin"];
@@ -80,7 +86,11 @@ export function computeWelcome(f: WelcomeFacts): WelcomeState {
           .map(({ workflowId, taskId, title, workflowName }) => ({ workflowId, taskId, title, workflowName }))
       : [];
 
-  const savedSinceOpen = !!active && active.task.savePoints.some((s) => s.createdAt >= f.openedAt);
+  let lastSinceOpen: ISavePoint | null = null;
+  for (const sp of active?.task.savePoints ?? []) {
+    if (sp.createdAt >= f.openedAt && (!lastSinceOpen || sp.createdAt > lastSinceOpen.createdAt)) lastSinceOpen = sp;
+  }
+  const savedSinceOpen = lastSinceOpen !== null;
 
   const done: Record<StepId, boolean> = {
     task: active !== null,
@@ -100,5 +110,5 @@ export function computeWelcome(f: WelcomeFacts): WelcomeState {
     } else steps[id] = "todo";
   }
 
-  return { steps, taskMode, active, recent, savedSinceOpen };
+  return { steps, taskMode, active, recent, savedSinceOpen, lastSinceOpen };
 }

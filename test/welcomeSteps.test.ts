@@ -132,6 +132,17 @@ describe("computeWelcome", () => {
     expect(fresh.savedSinceOpen).toBe(true);
   });
 
+  it("lastSinceOpen: null with no save point, null with only older ones, else the newest since open", () => {
+    expect(computeWelcome(facts({ openedAt: 1000 })).lastSinceOpen).toBeNull();
+    expect(computeWelcome(activeFacts({ openedAt: 1000 })).lastSinceOpen).toBeNull();
+    expect(computeWelcome(activeFacts({ openedAt: 1000 }, { savePoints: [sp(999), sp(5)] })).lastSinceOpen).toBeNull();
+    const withStep = { ...sp(1500), nextStep: "Review PR" };
+    // Newest first as stored, but the pick is by createdAt, not position.
+    const s = computeWelcome(activeFacts({ openedAt: 1000 }, { savePoints: [sp(1200), withStep, sp(999)] }));
+    expect(s.lastSinceOpen).toEqual(withStep);
+    expect(s.savedSinceOpen).toBe(true);
+  });
+
   it("pin: true done, false todo, null todo (never blocks)", () => {
     expect(computeWelcome(facts({ pinned: true })).steps.pin).toBe("done");
     expect(computeWelcome(facts({ pinned: false })).steps.pin).not.toBe("done");
