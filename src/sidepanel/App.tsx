@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { MotionRoot, Screen } from "./components/Motion";
-import { Toast, type ToastState } from "./components/Toast";
+import { Toast } from "./components/Toast";
 import { WorkflowSelector } from "./components/WorkflowSelector";
 import { CreateWorkflowForm } from "./components/CreateWorkflowForm";
 import { WorkflowView } from "./components/WorkflowView";
 import { Settings } from "./components/Settings";
 import { useNow, useOrion } from "./hooks/useOrion";
-import { errorMessage } from "./lib/format";
-import type { Ui } from "./lib/ui";
+import { useUi } from "./hooks/useUi";
 
 type View = { name: "home" } | { name: "create" } | { name: "settings" } | { name: "workflow"; id: string };
 
@@ -22,8 +21,7 @@ function App() {
     setNavigated(true);
     setView(next);
   }, []);
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const toastId = useRef(0);
+  const { ui, toast, closeToast } = useUi(reload);
   const now = useNow(30_000);
 
   // First load: open the active workflow directly, it's what you came back for.
@@ -32,28 +30,6 @@ function App() {
     const active = data.meta.activeWorkflowId;
     setView(active && data.workflows.some((w) => w.id === active) ? { name: "workflow", id: active } : { name: "home" });
   }, [data, view]);
-
-  const closeToast = useCallback(() => setToast(null), []);
-
-  const ui: Ui = useMemo(
-    () => ({
-      toast: (t) => setToast({ ...t, id: ++toastId.current }),
-      reload,
-      run: async (fn, okText) => {
-        try {
-          const result = await fn();
-          await reload();
-          if (okText) setToast({ id: ++toastId.current, kind: "info", text: okText });
-          return result;
-        } catch (err) {
-          await reload();
-          setToast({ id: ++toastId.current, kind: "error", text: errorMessage(err) });
-          return undefined;
-        }
-      },
-    }),
-    [reload]
-  );
 
   if (loadError) {
     return (

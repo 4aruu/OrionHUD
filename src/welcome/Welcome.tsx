@@ -10,12 +10,12 @@ import { BrandName } from "../sidepanel/components/BrandName";
 import { ErrorBoundary } from "../sidepanel/components/ErrorBoundary";
 import { MotionRoot } from "../sidepanel/components/Motion";
 import { ResumeCard } from "../sidepanel/components/ResumeCard";
-import { Toast, type ToastState } from "../sidepanel/components/Toast";
+import { Toast } from "../sidepanel/components/Toast";
 import { useNow, useOrion } from "../sidepanel/hooks/useOrion";
 import { useBusy } from "../sidepanel/hooks/useBusy";
+import { useUi } from "../sidepanel/hooks/useUi";
 import { importBackupFile } from "../sidepanel/lib/backup";
-import { countLabel, errorMessage } from "../sidepanel/lib/format";
-import type { Ui } from "../sidepanel/lib/ui";
+import { countLabel } from "../sidepanel/lib/format";
 import { attachNextStep, saveFromWelcome } from "./actions";
 import { computeWelcome, type StepId, type StepStatus } from "./steps";
 import { PinStep } from "./PinStep";
@@ -55,9 +55,14 @@ function useBrowserFacts() {
   const [shortcut, setShortcut] = useState<string | null | undefined>(undefined);
 
   const refresh = useCallback(() => {
-    void hasTabsPermission().then(setTabsGranted);
-    void readPinned().then(setPinned);
-    void getShortcut("save-point").then(setShortcut);
+    // Each falls back on a rejection, so the page can't wait forever for a fact.
+    const fallback = <T,>(what: string, set: (v: T) => void, value: T) => (err: unknown) => {
+      console.warn(`[${APP_NAME}] could not read ${what}`, err);
+      set(value);
+    };
+    hasTabsPermission().then(setTabsGranted, fallback("the tab permission", setTabsGranted, false));
+    readPinned().then(setPinned, fallback("the pinned state", setPinned, null));
+    getShortcut("save-point").then(setShortcut, fallback("the save shortcut", setShortcut, null));
   }, []);
 
   useEffect(() => {
@@ -85,8 +90,6 @@ function Welcome() {
   const [openedAt] = useState(() => Date.now());
   const [draft, setDraft] = useState("");
   const [announcement, setAnnouncement] = useState("");
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const toastId = useRef(0);
   const windowId = useRef<number | undefined>(undefined);
   const tabId = useRef<number | undefined>(undefined);
   const surfaceMode = useRef<SurfaceMode | undefined>(undefined);
@@ -98,26 +101,7 @@ function Welcome() {
   const [importing, runImport] = useBusy();
   const now = useNow(30_000);
 
-  const closeToast = useCallback(() => setToast(null), []);
-  const ui: Ui = useMemo(
-    () => ({
-      toast: (t) => setToast({ ...t, id: ++toastId.current }),
-      reload,
-      run: async (fn, okText) => {
-        try {
-          const result = await fn();
-          await reload();
-          if (okText) setToast({ id: ++toastId.current, kind: "info", text: okText });
-          return result;
-        } catch (err) {
-          await reload();
-          setToast({ id: ++toastId.current, kind: "error", text: errorMessage(err) });
-          return undefined;
-        }
-      },
-    }),
-    [reload]
-  );
+  const { ui, toast, closeToast } = useUi(reload);
 
   // Fetched up front so "Open the panel" can call sidePanel.open inside the click, with no await first.
   useEffect(() => {
