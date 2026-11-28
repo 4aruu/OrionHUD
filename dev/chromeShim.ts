@@ -88,7 +88,18 @@ const shim = {
     query: async () => [],
     update: async (_id: number, props: unknown) => log("group", props),
   },
-  windows: { getLastFocused: async () => ({ id: 1 }) },
+  windows: {
+    getLastFocused: async () => ({ id: 1 }),
+    // Reopen tabs focuses the user's window, or opens one when none is left.
+    update: async (id: number, props: unknown) => {
+      log("window", id, props);
+      return { id };
+    },
+    create: async ({ url }: { url?: string }) => {
+      log("open window", url);
+      return { id: 2, tabs: [{ id: Math.floor(Math.random() * 1e6), url }] };
+    },
+  },
   alarms: {
     create: async (name: string, info: unknown) => log("alarm", name, info),
     clear: async () => true,
