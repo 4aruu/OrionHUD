@@ -186,7 +186,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
    folding away takes its spacing with it instead of leaving a 12px jump. */
 .tree { display: flex; flex-direction: column; outline: none; border-radius: var(--r-md); }
 .tree > * + * { margin-top: 12px; }
-.tree > .tree-item { padding-bottom: 12px; }
+.tree > .tree-item { padding-bottom: 16px; }
 .tree > .tree-item + * { margin-top: 0; }
 .tree > .tree-item:last-child { padding-bottom: 0; }
 .tree-item > .group-new { margin-top: 12px; }
@@ -198,14 +198,28 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 }
 .group > div:first-child > .row { border-top: 0; }
 .row:hover { background: var(--hover); }
-.row-head { background: var(--surface-2); font-weight: 600; }
+.row-head { background: var(--surface-2); font-weight: 600; min-height: 40px; }
+/* Hierarchy, top to bottom: bold section heads; regular subtasks (parents a touch
+   heavier); sub-subtasks smaller and quieter. Hairline rules only separate the
+   level-2 sections, so nested rows read as part of their parent, not its equals. */
+.row-deep { border-top: 0; font-size: 13px; }
+.row-deep > .row-title { color: var(--text-2); }
+.row-deep .check { width: 14px; height: 14px; }
+.row-deep .check::after { inset: -5px; } /* the smaller box keeps a 24px click area */
+.row-parent:not(.row-head) > .row-title { font-weight: 500; }
+/* Branches: a rounded └ into every subtask, a line down from every open parent. */
+.guides { position: absolute; inset: 0; pointer-events: none; }
+.guide { position: absolute; border-left: 1px solid var(--guide); }
+.guide-rail { top: -1px; bottom: 0; }
+.guide-elbow { top: -1px; height: calc(50% + 1px); border-bottom: 1px solid var(--guide); border-bottom-left-radius: 6px; }
+.guide-more { top: 50%; bottom: 0; }
+.guide-stem { top: calc(50% + 8px); bottom: 0; }
 .row-head:hover { background: var(--surface-hover); }
 .row-focused { background: var(--hover); }
 .tree:focus .row-focused { box-shadow: inset 2px 0 0 var(--text-2); }
 .row-active, .row-active:hover { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent-text); }
 .tree:focus .row-active.row-focused { box-shadow: inset 2px 0 0 var(--accent-text); }
 .row-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row-parent:not(.row-head) > .row-title { color: var(--text-2); }
 .row.row-active > .row-title { color: var(--text); font-weight: 600; }
 .row-done > .row-title { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--text-3); }
 .chevron { position: relative; width: 16px; height: 16px; border: 0; background: none; color: var(--text-3); cursor: pointer; font-size: 12px; flex-shrink: 0; }

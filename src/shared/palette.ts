@@ -1,8 +1,8 @@
-// Colour tokens for both themes. DARK mirrors the :root block in
-// src/sidepanel/index.css; BEIGE is the warm light theme.
+// Colour tokens for both themes: the single source for src/shared/tokens.css
+// (test-locked) and the capture box. DARK is the graphite theme; BEIGE is the warm light theme.
 export const TOKEN_NAMES = [
   "bg", "surface", "surface-2", "surface-raised", "surface-hover", "tooltip", "hover",
-  "line", "line-strong", "line-hover",
+  "line", "line-strong", "line-hover", "guide",
   "accent", "accent-hover", "accent-text", "on-accent", "accent-soft", "accent-line",
   "focus",
   "ok", "red", "red-soft", "red-line",
@@ -23,6 +23,8 @@ export const DARK: Record<TokenName, string> = {
   "line": "#26282c",
   "line-strong": "#383b41",
   "line-hover": "#4a4e55",
+  // Plan tree connectors: one step above --line-strong so the branches read.
+  "guide": "#4a4d54",
   "accent": "#e8a33d",
   "accent-hover": "#f0b155",
   "accent-text": "#e8a33d",
@@ -53,6 +55,7 @@ export const BEIGE: Record<TokenName, string> = {
   "line": "#ddd3c1",
   "line-strong": "#c9bca5",
   "line-hover": "#b5a68c",
+  "guide": "#b5a68c",
   "accent": "#e8a33d",
   "accent-hover": "#db9530",
   "accent-text": "#8f5100",
