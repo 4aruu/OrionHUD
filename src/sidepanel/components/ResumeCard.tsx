@@ -24,6 +24,11 @@ interface Props {
   onPause?: () => void;
   /** Shown on the strip while the task is active. */
   onDone?: () => void;
+  /**
+   * Display-only (the welcome page): no controls that change data, and the
+   * latest save point's time always shows, ignoring the panel's resume rule.
+   */
+  preview?: boolean;
 }
 
 const TRIGGER_TEXT: Record<string, string> = {
@@ -40,11 +45,12 @@ const TRIGGER_TEXT: Record<string, string> = {
  * step, and what you can do with it. After a break it becomes "Where you
  * left off" with a Resume button instead.
  */
-export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onResume, onFocus, onPause, onDone }: Props) {
+export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onResume, onFocus, onPause, onDone, preview = false }: Props) {
   const latest = task.savePoints[0] ?? null;
-  const welcome = shouldShowResume({ latest, lastResumeShownAt: meta.lastResumeShownAt, now });
+  const welcome = !preview && shouldShowResume({ latest, lastResumeShownAt: meta.lastResumeShownAt, now });
   const nextStep = latestNextStep(task.savePoints);
-  const liveIsNewer = live && live.taskId === task.id && live.updatedAt > (latest?.createdAt ?? 0);
+  // The preview shows what the save point holds, not the live window.
+  const liveIsNewer = !preview && live && live.taskId === task.id && live.updatedAt > (latest?.createdAt ?? 0);
   const tabs = liveIsNewer ? live.tabs : latestTabs(task.savePoints);
   const aiTabs = tabs.filter((t) => t.kind === "ai-thread");
   const path = findPath(workflow.rootNodes, task.id);
@@ -54,7 +60,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
   const [hint, setHint] = useState<string | null>(null);
   const [saving, runSave] = useBusy();
 
-  if (!welcome && !isActive) return null;
+  if (!preview && !welcome && !isActive) return null;
 
   const remaining =
     isActive && task.allocatedTimeMs && task.startedAt ? task.allocatedTimeMs - (now - task.startedAt) : null;
@@ -78,6 +84,36 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
 
   const parents = path.slice(0, -1);
   const aiVendors = [...new Set(aiTabs.map((t) => t.vendor).filter(Boolean))];
+  const tabsLabel = `${countLabel(tabs.length, "tab")}${aiVendors.length ? `, incl. ${aiVendors.join(" and ")}` : ""}`;
+
+  if (preview) {
+    return (
+      <section className={`now ${isActive ? "now-active" : "now-welcome"}`} aria-label="Preview of your resume card">
+        <div className="now-top">
+          <span className="now-label">
+            <span className="now-mark" aria-hidden="true" />
+            {isActive ? "Now" : "Where you left off"}
+          </span>
+        </div>
+        <p className="now-title">
+          {task.isMilestone && <span className="flag" aria-label="milestone">⚑ </span>}
+          {task.title}
+        </p>
+        {parents.length > 0 && <p className="now-path">in {parents.map((n) => n.title).join(" › ")}</p>}
+        {nextStep && (
+          <div className="next-step">
+            <span className="field-label">Next step</span>
+            {/* Plain text, not the panel's click-to-edit box: nothing here is editable. */}
+            <p className="now-next">{nextStep}</p>
+          </div>
+        )}
+        <p className="now-meta">
+          <span>{latest ? `Saved ${formatAgo(now - latest.createdAt)}` : "No save point yet"}</span>
+          {tabs.length > 0 && <span>{tabsLabel}</span>}
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className={`now ${isActive ? "now-active" : "now-welcome"}`} aria-label={welcome ? "Welcome back" : "Current task"}>
@@ -197,8 +233,7 @@ export function ResumeCard({ workflow, task, isActive, meta, live, now, ui, onRe
                 }, `Reopened ${countLabel(tabs.length, "tab")} as a group.`)
               }
             >
-              Reopen {countLabel(tabs.length, "tab")}
-              {aiVendors.length ? `, incl. ${aiVendors.join(" and ")}` : ""}
+              Reopen {tabsLabel}
             </button>
           )}
           {welcome && (

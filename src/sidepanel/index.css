@@ -5,27 +5,6 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  color-scheme: dark;
-  --bg: #121315;
-  --surface: #18191c;
-  --surface-2: #1e2023;
-  --hover: rgba(255, 255, 255, 0.04);
-  --line: #26282c;
-  --line-strong: #383b41;
-  --guide: #4a4d54; /* plan tree connectors: one step above --line-strong so the branches read */
-
-  --accent: #e8a33d;
-  --accent-hover: #f0b155;
-  --on-accent: #1a1408;
-  --accent-soft: rgba(232, 163, 61, 0.09);
-  --accent-line: rgba(232, 163, 61, 0.5);
-  --ok: #8fbf96;
-  --red: #f08a7a;
-
-  --text: #ecebe7;
-  --text-2: #a3a39e;
-  --text-3: #8b8b86; /* ≥4.5:1 on --surface and --bg */
-
   --r-sm: 6px;
   --r-md: 8px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -52,7 +31,7 @@ body {
 button, input, select, textarea { font: inherit; color: inherit; }
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; border: 2px solid var(--bg); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 kbd {
   font-family: var(--mono); font-size: 12px; padding: 0 4px; border-radius: 4px;
   background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text);
@@ -116,10 +95,10 @@ kbd {
 .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-ghost { background: transparent; border-color: var(--line-strong); color: var(--text); font-weight: 500; }
-.btn-ghost:hover:not(:disabled) { background: var(--surface-2); border-color: #4a4e55; }
-.btn-on { border-color: var(--accent-line); color: var(--accent); background: var(--accent-soft); }
-.btn-danger { background: transparent; color: var(--red); border-color: rgba(240, 138, 122, 0.45); }
-.btn-danger:hover:not(:disabled) { background: rgba(240, 138, 122, 0.1); }
+.btn-ghost:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line-hover); }
+.btn-on { border-color: var(--accent-line); color: var(--accent-text); background: var(--accent-soft); }
+.btn-danger { background: transparent; color: var(--red); border-color: var(--red-line); }
+.btn-danger:hover:not(:disabled) { background: var(--red-soft); }
 .btn-sm { min-height: 32px; padding: 0 12px; }
 .btn-xs { min-height: 24px; padding: 0 8px; font-size: 12px; font-weight: 500; }
 .btn-full { width: 100%; min-height: 36px; }
@@ -149,18 +128,18 @@ kbd {
   background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
 }
 .now-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; }
-.now-label { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent); }
+.now-label { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent-text); }
 .now-welcome .now-label { color: var(--text-2); }
 .now-mark { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
 .now-timer { color: var(--text-3); font-variant-numeric: tabular-nums; }
-.now-over { color: var(--accent); }
+.now-over { color: var(--accent-text); }
 .now-title {
   border: 0; background: none; padding: 0; text-align: left; cursor: pointer; color: var(--text);
   font-size: 18px; font-weight: 600; line-height: 1.3; letter-spacing: -0.005em; min-height: 28px;
 }
 .now-title:hover { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 .now-path { font-size: 12px; color: var(--text-3); margin-top: -4px; }
-.flag { color: var(--accent); }
+.flag { color: var(--accent-text); }
 .next-step { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
 .next-text {
   text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: var(--r-sm);
@@ -187,7 +166,7 @@ input[type="text"], input:not([type]), input[type="number"], textarea, select {
   background: var(--bg); border: 1px solid var(--line-strong); outline: none;
   transition: border-color var(--t);
 }
-input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+input:focus, textarea:focus, select:focus { border-color: var(--focus); }
 textarea { resize: vertical; font-family: var(--mono); font-size: 12px; line-height: 1.5; padding: 8px; }
 input::placeholder, textarea::placeholder { color: var(--text-3); }
 input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
@@ -211,7 +190,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .tree > .tree-item + * { margin-top: 0; }
 .tree > .tree-item:last-child { padding-bottom: 0; }
 .tree-item > .group-new { margin-top: 12px; }
-.tree:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.tree:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
 .group { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); overflow: hidden; }
 .row {
   position: relative; display: flex; align-items: center; gap: 8px; min-height: 36px; padding-right: 8px;
@@ -235,11 +214,11 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .guide-elbow { top: -1px; height: calc(50% + 1px); border-bottom: 1px solid var(--guide); border-bottom-left-radius: 6px; }
 .guide-more { top: 50%; bottom: 0; }
 .guide-stem { top: calc(50% + 8px); bottom: 0; }
-.row-head:hover { background: #232528; }
+.row-head:hover { background: var(--surface-hover); }
 .row-focused { background: var(--hover); }
 .tree:focus .row-focused { box-shadow: inset 2px 0 0 var(--text-2); }
-.row-active, .row-active:hover { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
-.tree:focus .row-active.row-focused { box-shadow: inset 2px 0 0 var(--accent); }
+.row-active, .row-active:hover { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent-text); }
+.tree:focus .row-active.row-focused { box-shadow: inset 2px 0 0 var(--accent-text); }
 .row-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row.row-active > .row-title { color: var(--text); font-weight: 600; }
 .row-done > .row-title { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--text-3); }
@@ -250,13 +229,13 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
   background: none; display: grid; place-items: center; font-size: 12px; line-height: 1; color: var(--bg); cursor: pointer;
 }
 .check:hover { border-color: var(--text); }
-.row-active .check { border-color: var(--accent); }
+.row-active .check { border-color: var(--accent-text); }
 /* The visible box stays small; the clickable area is 24px+. */
 .check::after, .chevron::after { content: ""; position: absolute; inset: -4px; }
 .check-done { background: var(--text-3); border-color: var(--text-3); font-weight: 700; }
 .row-progress { font-size: 12px; color: var(--text-3); font-weight: 400; font-variant-numeric: tabular-nums; }
 .row-dot { width: 6px; height: 6px; border-radius: 1px; background: var(--text-2); flex-shrink: 0; }
-.badge-now { font-size: 12px; font-weight: 600; color: var(--accent); }
+.badge-now { font-size: 12px; font-weight: 600; color: var(--accent-text); }
 /* Row actions take no space until shown, then fade in (@starting-style;
    browsers without it just show them). */
 .row-actions {
@@ -354,7 +333,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
   border: 0; background: none; cursor: pointer;
 }
 .wf-card:hover { background: var(--hover); }
-.wf-card-active { box-shadow: inset 2px 0 0 var(--accent); }
+.wf-card-active { box-shadow: inset 2px 0 0 var(--accent-text); }
 .wf-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .wf-name { font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
 .onboard { display: flex; flex-direction: column; gap: 16px; padding-top: 12px; }
@@ -373,10 +352,14 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 
 /* ── Settings ───────────────────────────────────────── */
 .card { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
+.card-legend { font-size: 14px; font-weight: 600; padding: 0; margin-bottom: 8px; }
+.radio-chip { position: relative; cursor: pointer; }
+.radio-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+.radio-chip:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .card h3 { font-size: 14px; font-weight: 600; }
 .bridge-status { font-size: 12px; }
 .bridge-ok { color: var(--ok); }
-.bridge-warn { color: var(--accent); }
+.bridge-warn { color: var(--accent-text); }
 .bridge-muted { color: var(--text-2); }
 .bridge-cmd {
   display: block; font-family: var(--mono); font-size: 12px; padding: 8px; border-radius: var(--r-sm);
@@ -389,10 +372,10 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .delete-row > span { flex: 1; color: var(--text); font-size: 14px; }
 
 /* ── Overlay, dialogs, toast ────────────────────────── */
-.overlay { position: fixed; inset: 0; background: rgba(8, 8, 9, 0.7); display: grid; place-items: center; padding: 12px; z-index: 20; }
+.overlay { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; padding: 12px; z-index: 20; }
 .sheet {
   width: 100%; max-width: 420px; max-height: 90vh; overflow: auto; background: var(--surface); border: 1px solid var(--line-strong);
-  border-radius: var(--r-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  border-radius: var(--r-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 32px var(--shadow-color);
 }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; }
 .keys { display: flex; flex-direction: column; gap: 4px; }
@@ -405,10 +388,10 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 .toast-region { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 30; pointer-events: none; }
 .toast {
   pointer-events: auto; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; min-height: 40px; border-radius: var(--r-md);
-  background: #222427; border: 1px solid var(--line-strong); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); font-size: 14px;
+  background: var(--surface-raised); border: 1px solid var(--line-strong); box-shadow: 0 8px 24px var(--shadow-color); font-size: 14px;
 }
 .toast > span { flex: 1; }
-.toast-error { border-color: rgba(240, 138, 122, 0.55); }
+.toast-error { border-color: var(--red-line); }
 
 /* Reduced motion: CSS transitions become instant and nothing moves. (Motion
    components follow the same setting through MotionConfig.) The spinner keeps
@@ -424,7 +407,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent);
 /* ── Tooltips (icon buttons: hover and keyboard focus) ── */
 [data-tip]::before {
   content: attr(data-tip); position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
-  padding: 4px 8px; border-radius: var(--r-sm); background: #26282c; border: 1px solid var(--line-strong);
+  padding: 4px 8px; border-radius: var(--r-sm); background: var(--tooltip); border: 1px solid var(--line-strong);
   color: var(--text); font-size: 12px; font-weight: 500; line-height: 1.4; white-space: nowrap;
   pointer-events: none; opacity: 0; transition: opacity 100ms ease-out;
 }

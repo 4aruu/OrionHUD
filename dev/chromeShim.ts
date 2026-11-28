@@ -18,10 +18,15 @@ let bridgeGranted = false;
 const sessionStore: Record<string, unknown> = {
   bridgeStatus: { state: "not-installed", detail: null, hostVersion: null, at: Date.now() },
 };
+const localStore: Record<string, unknown> = {};
 const storageListeners = new Set<Listener>();
 type PermReq = { permissions?: string[] };
 const isBridge = (p: PermReq) => p.permissions?.includes("nativeMessaging") ?? false;
 let badge = "";
+// Welcome page facts: the save-point binding and the toolbar pin.
+let saveShortcut: string | null = "Alt+Shift+S";
+let pinned = false;
+const pinListeners = new Set<Listener>();
 const messageListeners = new Set<Listener>();
 const log = (...a: unknown[]) => console.info("[chrome-shim]", ...a);
 
@@ -38,6 +43,8 @@ const shim = {
     // Real version from the manifest, marked as the harness build.
     getManifest: () => ({ version: `${manifest.version}-dev` }),
     getURL: (p: string) => `/${p}`,
+    // Settings → Show welcome again looks for an open welcome tab first; the harness has none.
+    getContexts: async () => [],
   },
   action: {
     setBadgeText: async ({ text }: { text: string }) => {
@@ -46,6 +53,20 @@ const shim = {
     },
     setTitle: async () => undefined,
     setBadgeBackgroundColor: async () => undefined,
+    getUserSettings: async () => ({ isOnToolbar: pinned }),
+    onUserSettingsChanged: {
+      addListener: (l: Listener) => pinListeners.add(l),
+      removeListener: (l: Listener) => pinListeners.delete(l),
+    },
+  },
+  commands: {
+    getAll: async () => [
+      { name: "save-point", shortcut: saveShortcut ?? "", description: "Save a save point" },
+      { name: "quick-capture", shortcut: "Alt+Shift+Q", description: "Capture a side quest" },
+    ],
+  },
+  sidePanel: {
+    open: async (opts: unknown) => log("sidePanel.open", opts),
   },
   permissions: {
     contains: async (p: PermReq) => (isBridge(p) ? bridgeGranted : tabsGranted),
@@ -61,6 +82,17 @@ const shim = {
     },
   },
   storage: {
+    // Minimal: enough for the Appearance setting (theme preference) in the harness.
+    local: {
+      get: async (key: string) => (key in localStore ? { [key]: localStore[key] } : {}),
+      set: async (items: Record<string, unknown>) => {
+        for (const [k, v] of Object.entries(items)) {
+          const oldValue = localStore[k];
+          localStore[k] = v;
+          storageListeners.forEach((l) => l({ [k]: { oldValue, newValue: v } }, "local"));
+        }
+      },
+    },
     session: {
       get: async (key: string) => ({ [key]: sessionStore[key] }),
       set: async (items: Record<string, unknown>) => {
@@ -83,6 +115,11 @@ const shim = {
       return { id: Math.floor(Math.random() * 1e6), url };
     },
     group: async () => 99,
+    getCurrent: async () => ({ id: 7 }),
+    update: async (id: number, props: unknown) => {
+      log("tab", id, props);
+      return { id };
+    },
   },
   tabGroups: {
     query: async () => [],
@@ -90,6 +127,7 @@ const shim = {
   },
   windows: {
     getLastFocused: async () => ({ id: 1 }),
+    getCurrent: async () => ({ id: 1 }),
     // Reopen tabs focuses the user's window, or opens one when none is left.
     update: async (id: number, props: unknown) => {
       log("window", id, props);
@@ -114,5 +152,13 @@ const shim = {
   },
   setTabsGranted(v: boolean) {
     tabsGranted = v;
+  },
+  /** null = unassigned (another extension took it). */
+  setSaveShortcut(v: string | null) {
+    saveShortcut = v;
+  },
+  setPinned(v: boolean) {
+    pinned = v;
+    pinListeners.forEach((l) => l({ isOnToolbar: v }));
   },
 };

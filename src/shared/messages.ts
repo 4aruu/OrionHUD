@@ -11,7 +11,9 @@ export type StateChangeReason = "idle" | "active" | "capture" | "menu" | "comman
 export type ExtensionMessage =
   | { type: "ORION_STATE_CHANGED"; reason: StateChangeReason }
   | { type: "ORION_CAPTURE_SUBMIT"; mode: CaptureMode; text: string }
-  | { type: "ORION_BRIDGE_CONNECT" };
+  | { type: "ORION_BRIDGE_CONNECT" }
+  /** Welcome page → service worker: open the panel window (window mode, or the side panel failed). */
+  | { type: "ORION_OPEN_PANEL_WINDOW" };
 
 const REASONS: StateChangeReason[] = ["idle", "active", "capture", "menu", "command", "alarm", "bridge"];
 
@@ -36,6 +38,8 @@ export function parseExtensionMessage(raw: unknown): ExtensionMessage | null {
     }
     case "ORION_BRIDGE_CONNECT":
       return Object.keys(msg).length === 1 ? { type: "ORION_BRIDGE_CONNECT" } : null;
+    case "ORION_OPEN_PANEL_WINDOW":
+      return Object.keys(msg).length === 1 ? { type: "ORION_OPEN_PANEL_WINDOW" } : null;
     default:
       return null;
   }

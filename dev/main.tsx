@@ -1,4 +1,6 @@
 import "./chromeShim";
+import "../src/shared/themeBoot";
+import "../src/shared/tokens.css";
 import "../src/sidepanel/index.css";
 
 // A real side panel never restores scroll; match that on harness reloads.

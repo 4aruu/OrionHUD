@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { IWorkflowState } from "../../shared/types";
-import { deleteWorkflowCascade, exportBackup, importBackup } from "../../shared/workflowActions";
+import { deleteWorkflowCascade, exportBackup } from "../../shared/workflowActions";
+import { openShortcutSettings } from "../../platform/commands";
+import { showWelcomeTab } from "../../platform/welcome";
+import { importBackupFile } from "../lib/backup";
 import { hasTabsPermission, requestTabsPermission, TABS_PERMISSION } from "../../platform/tabs";
 import { backupFileName, countLabel } from "../lib/format";
 import type { Ui } from "../lib/ui";
@@ -10,6 +13,14 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { BusyButton } from "./Buttons";
 import { useBusy } from "../hooks/useBusy";
 import { walk } from "../../shared/taskTree";
+import { APP_NAME } from "../../shared/brand";
+import { applyTheme, applyThemeChoice, onThemePrefChange, readThemePref, writeThemePref, type ThemePref } from "../../shared/theme";
+
+const THEME_CHOICES: { value: ThemePref; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
 
 function taskCount(w: IWorkflowState): number {
   let n = 0;
@@ -25,6 +36,9 @@ interface Props {
 
 export function Settings({ workflows, ui, onBack }: Props) {
   const [tabsOn, setTabsOn] = useState<boolean | null>(null);
+  const [theme, setTheme] = useState<ThemePref>("system");
+  // Set once the user (or another panel) has chosen, so a slow first read can't undo it.
+  const themeTouched = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [exporting, runExport] = useBusy();
@@ -33,7 +47,30 @@ export function Settings({ workflows, ui, onBack }: Props) {
 
   useEffect(() => {
     void hasTabsPermission().then(setTabsOn);
+    void readThemePref().then((pref) => {
+      if (!themeTouched.current) setTheme(pref);
+    });
+    // Follow a choice made in another panel or window.
+    return onThemePrefChange((pref) => {
+      themeTouched.current = true;
+      setTheme(pref);
+    });
   }, []);
+
+  function chooseTheme(pref: ThemePref) {
+    themeTouched.current = true;
+    void applyThemeChoice(pref, theme, {
+      write: writeThemePref,
+      apply: (p) => {
+        setTheme(p);
+        applyTheme(p);
+      },
+      onError: (err) => {
+        console.warn(`[${APP_NAME}] could not save the appearance choice`, err);
+        ui.toast({ kind: "error", text: "Couldn't save your appearance choice. Try again." });
+      },
+    });
+  }
 
   function toggleTabs() {
     if (tabsOn) {
@@ -59,13 +96,15 @@ export function Settings({ workflows, ui, onBack }: Props) {
   }
 
   async function doImport(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      ui.toast({ kind: "error", text: "Backup file is larger than 5 MB." });
-      return;
-    }
-    const text = await file.text();
-    const r = await ui.run(() => importBackup(text));
+    const r = await ui.run(() => importBackupFile(file));
     if (r) ui.toast({ kind: "info", text: `Imported ${countLabel(r.imported, "workflow")}.` });
+  }
+
+  function showWelcome() {
+    showWelcomeTab().catch((err: unknown) => {
+      console.warn(`[${APP_NAME}] could not show the welcome tab`, err);
+      ui.toast({ kind: "error", text: "Couldn't open the welcome tab. Try again." });
+    });
   }
 
   return (
@@ -78,6 +117,18 @@ export function Settings({ workflows, ui, onBack }: Props) {
           <h2>Settings</h2>
         </div>
       </header>
+
+      <fieldset className="card">
+        <legend className="card-legend">Appearance</legend>
+        <div className="row-buttons">
+          {THEME_CHOICES.map((c) => (
+            <label key={c.value} className={`btn btn-ghost btn-sm radio-chip ${theme === c.value ? "btn-on" : ""}`}>
+              <input type="radio" name="appearance" value={c.value} checked={theme === c.value} onChange={() => chooseTheme(c.value)} />
+              {c.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <section className="card">
         <h3>Tab memory</h3>
@@ -106,7 +157,10 @@ export function Settings({ workflows, ui, onBack }: Props) {
           </li>
           <li>Right-click selected text → <BrandName /> › Pin as a decision</li>
         </ul>
-        <button className="btn btn-ghost btn-sm" onClick={() => void chrome.tabs.create({ url: "chrome://extensions/shortcuts" })}>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => openShortcutSettings().catch(() => ui.toast({ kind: "error", text: "Couldn't open the shortcuts page. Try again." }))}
+        >
           Change shortcuts
         </button>
       </section>
@@ -171,7 +225,12 @@ export function Settings({ workflows, ui, onBack }: Props) {
         </ConfirmDialog>
       )}
 
-      <p className="muted small pad"><BrandName /> {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking</p>
+      <p className="muted small pad">
+        <BrandName /> {chrome.runtime.getManifest().version} · local-only · no accounts, no tracking ·{" "}
+        <button className="link-btn" onClick={showWelcome}>
+          Show welcome again
+        </button>
+      </p>
     </div>
   );
 }

@@ -33,3 +33,13 @@ describe("isOwnSender", () => {
     expect(isOwnSender({}, "me")).toBe(false);
   });
 });
+
+describe("ORION_OPEN_PANEL_WINDOW", () => {
+  it("ORION_OPEN_PANEL_WINDOW parses", () => {
+    expect(parseExtensionMessage({ type: "ORION_OPEN_PANEL_WINDOW" })).toEqual({ type: "ORION_OPEN_PANEL_WINDOW" });
+  });
+
+  it("extra keys are rejected", () => {
+    expect(parseExtensionMessage({ type: "ORION_OPEN_PANEL_WINDOW", url: "https://example.com" })).toBeNull();
+  });
+});
